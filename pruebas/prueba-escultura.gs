@@ -1,13 +1,15 @@
 
 // ---------- PRUEBA TEMPORAL (no forma parte del backend publicado) ----------
+var UNA_SOLA = 'Edit this photo. Keep the main art object (or objects) in the centre of the photo, together with the base or stand directly under it, EXACTLY as it is: ' +
+  'same pixels, same position, same size, same angle, same colours and the same light on it. ' +
+  'Replace everything else (the furniture it stands on, walls, windows, plants, other objects, and anything seen through gaps or holes in the object) with a new setting: ' +
+  'the object now stands on SUPERFICIE against a plain off-white plaster wall in a bright apartment on the Venezuelan Caribbean coast, soft daylight from the left, calm and uncluttered, ' +
+  'nothing else on the furniture, a palm leaf entering at one edge of the frame. ' +
+  'The new furniture and room must follow the same camera height, angle and perspective as the original photo so the object sits naturally on the surface, with a realistic contact shadow and a soft cast shadow. ' +
+  'Do NOT redraw, restyle, simplify, crop, move or relight the object or its base. Same framing and aspect ratio. Photorealistic photograph.';
 var PRUEBAS_ESC = {
-  integrada: { foto: 'https://raw.githubusercontent.com/Gforero1/creamdo-panel/8a9388ec3d9f1430137d15741e2a01fcbc28eff5/pruebas/muestras/caja-compuesta.jpg', texto:
-    'This is a photo of a room where an art object has been digitally pasted onto a piece of furniture. ' +
-    'Make it look like a real photograph of that object physically standing there. ' +
-    'Only fix the integration: the contact shadow under it, the soft shadow it casts on the furniture and on the wall according to the light in the room, ' +
-    'a faint reflection if the surface is polished, and matching grain, sharpness and white balance. ' +
-    'Strict rules: do NOT move, resize, rotate, redraw, simplify or recolor the object; do NOT add or remove any part of it, and do NOT add a base or stand; ' +
-    'do NOT change the room, the furniture, the wall, the plant or the camera framing. Output the same image, same aspect ratio and composition, just naturally integrated.' }
+  caja: { foto: 'https://raw.githubusercontent.com/Gforero1/creamdo-panel/988e30d9650aded87607a57a9be215ef48d86719/pruebas/muestras/caja-pintada.jpg', texto: UNA_SOLA.replace('SUPERFICIE', 'a light natural-wood sideboard') },
+  cubos: { foto: 'https://raw.githubusercontent.com/Gforero1/creamdo-panel/988e30d9650aded87607a57a9be215ef48d86719/pruebas/muestras/escultura-cubos.jpg', texto: UNA_SOLA.replace('SUPERFICIE', 'a dark tropical-hardwood console table') }
 };
 function pruebaEscultura() {
   var clave = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
@@ -21,8 +23,8 @@ function pruebaEscultura() {
     });
     var img = null; try { img = buscarImagen_(JSON.parse(resp.getContentText())); } catch (e) {}
     if (!img) { salida[k] = 'error ' + resp.getResponseCode() + ' ' + resp.getContentText().slice(0, 200); return; }
-    var blob = Utilities.newBlob(Utilities.base64Decode(img.data), img.mime, 'prueba2-' + k);
-    salida[k] = Drive.Files.create({ name: 'prueba2-' + k, parents: [carpeta] }, blob, { fields: 'id' }).id;
+    var blob = Utilities.newBlob(Utilities.base64Decode(img.data), img.mime, 'prueba3-' + k);
+    salida[k] = Drive.Files.create({ name: 'prueba3-' + k, parents: [carpeta] }, blob, { fields: 'id' }).id;
   });
   console.log('RESULTADO_PRUEBA ' + JSON.stringify(salida));
 }
