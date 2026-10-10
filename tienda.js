@@ -72,8 +72,7 @@
       el('ul', {}, [
         item('var(--cian)', 'Galería', 'Pintura, escultura y arte sacro de artistas venezolanos.'),
         item('var(--naranja)', 'Representación', 'Llevamos la obra de nuestros artistas a quien la busca.'),
-        item('var(--magenta)', 'Asesoría', 'Te ayudamos a elegir la pieza para tu casa, tu oficina o tu evento.'),
-        item('#FFFFFF', 'Bromelias', 'Arte vivo para acompañar los espacios.')
+        item('var(--magenta)', 'Asesoría', 'Te ayudamos a elegir la pieza para tu casa, tu oficina o tu evento.')
       ]),
       el('a', { clase: 'artistas-cta', href: whatsapp('Hola, soy artista y me gustaría comercializar mi obra con Creamdo Art.'), target: '_blank', rel: 'noopener', texto: '¿Eres artista? Comercializa tu arte con nosotros' })
     ]);
@@ -87,8 +86,8 @@
     var disponible = obras.filter(function (o) { return o.estado !== 'Vendida' && o.imagenes.length; })[0];
     var portada = tipo ? null : el('section', { clase: 'portada' }, [
       el('div', {}, [
-        el('h1', {}, [el('b', { texto: 'Arte que' }), el('b', { texto: 'habita' }), el('span', { texto: 'contigo' })]),
-        el('p', { clase: 'texto', texto: 'Galería de Adriana Moncayo en Lechería. Cada obra está aquí con sus medidas y su precio; para verla o reservarla, nos escribes por WhatsApp.' }),
+        el('h1', { texto: 'Galería de Adriana Moncayo en Lechería, Venezuela.' }),
+        el('p', { clase: 'texto', texto: 'Pintura, escultura y arte sacro de artistas venezolanos. Cada obra está aquí con sus medidas y su precio; para verla o reservarla, nos escribes por WhatsApp.' }),
         rayas()
       ]),
       disponible ? el('a', { clase: 'destacada', href: '#/obra/' + disponible.id }, [

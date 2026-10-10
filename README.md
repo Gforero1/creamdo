@@ -12,7 +12,8 @@ No hay carrito: cada obra abre WhatsApp con su nombre escrito. Solo salen obras 
 Sale del logo de la marca, no de una plantilla:
 
 - **Color:** blanco y negro, con las tres rayas del logo como acento: cian `#009ED8`, naranja `#F26122`, magenta `#EC1163`.
-- **Tipografía:** una sola familia, Archivo (alojada en `marca/`), usada como en el logotipo: muy gruesa y ancha contra muy fina.
+- **Tipografía:** una sola familia, Archivo (alojada en `marca/`). El peso grueso y ancho se usa solo en el logotipo; títulos en peso 300 o 600 y como mucho 42 px, para que mande la obra (como en webs de galerías: White Cube 48 px máximo, Freites 26 px).
+- **Sin eslogan:** la portada dice quién es y dónde está, y enseña una obra.
 - **Motivo:** rayas inclinadas 22 grados, igual que el monograma.
 - **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.
 - **Textos:** los de la galería (bio de Instagram y tienda anterior) y datos reales de cada obra.
