@@ -16,7 +16,7 @@ Sale del logo de la marca, no de una plantilla:
 - **Proporción:** obras en tres columnas desfasadas en escritorio (dos en tableta, una en móvil); la foto destacada y la de la ficha nunca pasan de la altura de la pantalla.
 - **Movimiento:** solo tres gestos y ninguno con `prefers-reduced-motion`: las obras se descubren al entrar en pantalla, las tres rayas se trazan al cargar, y al abrir una obra la foto viaja de la pared a la ficha (View Transitions) y vuelve a su sitio al regresar.
 - **Sin eslogan:** la portada dice quién es y dónde está, y enseña una obra.
-- **Motivo:** rayas inclinadas 22 grados, igual que el monograma.
+- **Motivo:** rayas inclinadas 22 grados hacia la derecha al bajar (\\), igual que el monograma.
 - **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.
 - **Textos:** los de la galería (bio de Instagram y tienda anterior) y datos reales de cada obra.
 
