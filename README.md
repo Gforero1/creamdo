@@ -13,6 +13,8 @@ Sale del logo de la marca, no de una plantilla:
 
 - **Color:** blanco y negro, con las tres rayas del logo como acento: cian `#009ED8`, naranja `#F26122`, magenta `#EC1163`.
 - **Tipografía:** una sola familia, Archivo (alojada en `marca/`). El peso grueso y ancho se usa solo en el logotipo; títulos en peso 300 o 600 y como mucho 42 px, para que mande la obra (como en webs de galerías: White Cube 48 px máximo, Freites 26 px).
+- **Proporción:** obras en tres columnas desfasadas en escritorio (dos en tableta, una en móvil); la foto destacada y la de la ficha nunca pasan de la altura de la pantalla.
+- **Movimiento:** solo tres gestos y ninguno con `prefers-reduced-motion`: las obras se descubren al entrar en pantalla, las tres rayas se trazan al cargar, y al abrir una obra la foto viaja de la pared a la ficha (View Transitions) y vuelve a su sitio al regresar.
 - **Sin eslogan:** la portada dice quién es y dónde está, y enseña una obra.
 - **Motivo:** rayas inclinadas 22 grados, igual que el monograma.
 - **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.

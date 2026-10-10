@@ -43,8 +43,8 @@
 
   // ---------- piezas comunes ----------
   function tarjeta(o) {
-    return el('a', { clase: 'pieza', href: '#/obra/' + o.id }, [
-      o.imagenes[0] ? el('img', { src: foto(o.imagenes[0], 1000), alt: o.titulo + ', de ' + o.artista, loading: 'lazy' }) : null,
+    return el('a', { clase: 'pieza', href: '#/obra/' + o.id, 'data-obra': o.id }, [
+      o.imagenes[0] ? el('span', { clase: 'marco' }, [el('img', { src: foto(o.imagenes[0], 1000), alt: o.titulo + ', de ' + o.artista, loading: 'lazy' })]) : null,
       el('h3', { texto: o.titulo }),
       el('p', { clase: 'artista', texto: o.artista }),
       el('p', { texto: [o.tecnica, medidasCortas(o)].filter(Boolean).join(' · ') }),
@@ -58,10 +58,12 @@
       cargado ? el('p', {}, ['El catálogo se está montando. Mientras tanto, escríbenos y te contamos qué hay disponible: ',
         el('a', { href: whatsapp('Hola, quiero saber qué obras tienen disponibles.'), target: '_blank', rel: 'noopener', texto: 'WhatsApp' }), '.']) : null
     ]);
-    var a = el('div', { clase: 'col' }), b = el('div', { clase: 'col' });
-    lista.forEach(function (o, i) { (i % 2 ? b : a).appendChild(tarjeta(o)); });
-    return el('div', { clase: 'muro' }, [a, b]);
+    var cols = [], n = Math.min(columnas(), lista.length);
+    for (var k = 0; k < n; k++) cols.push(el('div', { clase: 'col' }));
+    lista.forEach(function (o, i) { cols[i % n].appendChild(tarjeta(o)); });
+    return el('div', { clase: 'muro' }, cols);
   }
+  function columnas() { return window.innerWidth >= 1000 ? 3 : window.innerWidth >= 620 ? 2 : 1; }
   function banda() {
     function item(color, nombre, texto) {
       return el('li', {}, [el('i', { style: 'background:' + color }), el('div', {}, [el('b', { texto: nombre }), el('span', { texto: texto })])]);
@@ -90,8 +92,8 @@
         el('p', { clase: 'texto', texto: 'Pintura, escultura y arte sacro de artistas venezolanos. Cada obra está aquí con sus medidas y su precio; para verla o reservarla, nos escribes por WhatsApp.' }),
         rayas()
       ]),
-      disponible ? el('a', { clase: 'destacada', href: '#/obra/' + disponible.id }, [
-        el('img', { src: foto(disponible.imagenes[0], 1200), alt: disponible.titulo + ', de ' + disponible.artista }),
+      disponible ? el('a', { clase: 'destacada', href: '#/obra/' + disponible.id, 'data-obra': disponible.id }, [
+        el('span', { clase: 'marco' }, [el('img', { src: foto(disponible.imagenes[0], 1000), alt: disponible.titulo + ', de ' + disponible.artista })]),
         el('p', {}, [el('b', { texto: disponible.titulo }), ' · ' + disponible.artista])
       ]) : null
     ]);
@@ -122,7 +124,7 @@
     var vendida = o.estado === 'Vendida', reales = o.imagenes.length - (o.enSala || 0);
     var figuras = o.imagenes.map(function (im, i) {
       var enSala = i >= reales;
-      return el('figure', {}, [el('img', { src: foto(im, 1600), alt: o.titulo + ', de ' + o.artista + (enSala ? ', en una sala' : ''), loading: i ? 'lazy' : 'eager' }),
+      return el('figure', {}, [el('img', { src: foto(im, 1600), style: i ? '' : 'view-transition-name:obra;background-image:url("' + foto(im, 1000) + '")', alt: o.titulo + ', de ' + o.artista + (enSala ? ', en una sala' : ''), loading: i ? 'lazy' : 'eager' }),
         enSala ? el('figcaption', { texto: 'Imagen referencial: la obra a escala en una sala decorada.' }) : null]);
     });
     function dato(k, v) { return v ? el('div', {}, [el('dt', { texto: k }), el('dd', { texto: v })]) : null; }
@@ -144,24 +146,56 @@
   }
 
   // ---------- ruta ----------
+  var rutaObra = null, alturas = {}, hashActual = location.hash, colsActuales = columnas();
   function pintar() {
-    var r = location.hash.replace(/^#\/?/, '').split('/'), nodos;
-    if (r[0] === 'obra' && r[1]) nodos = vistaObra(r[1]);
+    var r = location.hash.replace(/^#\/?/, '').split('/'), nodos, vengoDe = rutaObra;
+    rutaObra = r[0] === 'obra' && r[1] ? r[1] : null;
+    if (rutaObra) nodos = vistaObra(r[1]);
     else if (r[0] === 'artistas') nodos = vistaArtistas();
     else if (r[0] === 'artista' && r[1]) nodos = vistaArtista(r[1]);
     else if (r[0] === 'tipo' && r[1]) nodos = vistaObras(r[1]);
     else nodos = vistaObras();
     vista.textContent = '';
     nodos.forEach(function (n) { if (n) vista.appendChild(n); });
+    // Al volver de una ficha, la foto regresa a su sitio en la pared.
+    if (vengoDe && !rutaObra) { var t = vista.querySelector('.pieza[data-obra="' + vengoDe + '"] img'); if (t) marcar(t); }
+    descubrir();
     var enArtistas = r[0] === 'artistas' || r[0] === 'artista';
     [['n-obras', !enArtistas], ['n-artistas', enArtistas]].forEach(function (x) {
       var a = document.getElementById(x[0]); if (x[1]) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
   }
+  // ---------- movimiento ----------
+  var quieto = !window.matchMedia || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ojo = !quieto && 'IntersectionObserver' in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('a-la-vista'); ojo.unobserve(e.target); } });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }) : null;
+  if (ojo) document.documentElement.classList.add('mov');
+  function descubrir() {
+    if (!ojo) return;
+    [].forEach.call(vista.querySelectorAll('.pieza, .destacada'), function (p) { ojo.observe(p); });
+  }
+  function marcar(img) {
+    [].forEach.call(document.querySelectorAll('[data-viaja]'), function (x) { x.style.viewTransitionName = ''; x.removeAttribute('data-viaja'); });
+    img.style.viewTransitionName = 'obra'; img.setAttribute('data-viaja', '1');
+    var p = img.closest('.pieza, .destacada'); if (p) p.classList.add('a-la-vista');
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[data-obra]'), img = a && a.querySelector('img');
+    if (img) marcar(img);
+  }, true);
+  function cambiar() {
+    alturas[hashActual] = window.scrollY;
+    var destino = location.hash, y = alturas[destino] && !/^#\/obra\//.test(destino) ? alturas[destino] : 0;
+    function hacer() { pintar(); window.scrollTo(0, y); }
+    hashActual = destino;
+    if (!quieto && document.startViewTransition) document.startViewTransition(hacer); else hacer();
+  }
+  window.addEventListener('resize', function () { if (columnas() !== colsActuales) { colsActuales = columnas(); if (!rutaObra) pintar(); } });
   var contacto = whatsapp('Hola, vengo de la web de Creamdo Art.');
   document.getElementById('n-contacto').href = contacto;
   document.getElementById('f-whatsapp').href = contacto;
   document.getElementById('f-instagram').href = 'https://www.instagram.com/' + (C.INSTAGRAM || '') + '/';
-  window.addEventListener('hashchange', function () { pintar(); window.scrollTo(0, 0); });
+  window.addEventListener('hashchange', cambiar);
   var espera = cargar(); pintar(); espera.then(pintar);
 })();

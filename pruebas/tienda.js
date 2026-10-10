@@ -9,7 +9,7 @@ const mapa={marina:'marina.jpg',salaA:'t-salaA.jpg',salaB:'t-salaB.jpg',coromoto
 (async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome'});
 const abrir=async(dev,lista)=>{const c=await b.newContext(dev||{viewport:{width:1280,height:900}});const p=await c.newPage();p.on('pageerror',e=>{mal++;console.log('ERROR',e.message)});
   let dialogo=false;p.on('dialog',d=>{dialogo=true;d.dismiss()});p.dialogo=()=>dialogo;
-  await p.route('**/config.js',r=>r.fulfill({contentType:'text/javascript',body:"window.CREAMDO={WHATSAPP:'584148090559',INSTAGRAM:'creamdo.art',API:'http://localhost:8765/catalogo-falso'};"}));
+  await p.route('**/config.js*',r=>r.fulfill({contentType:'text/javascript',body:"window.CREAMDO={WHATSAPP:'584148090559',INSTAGRAM:'creamdo.art',API:'http://localhost:8765/catalogo-falso'};"}));
   await p.route('**/catalogo-falso**',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({ok:true,obras:lista})}));
   await p.route('https://drive.google.com/thumbnail**',r=>{const id=new URL(r.request().url()).searchParams.get('id');r.fulfill({contentType:'image/jpeg',body:fs.readFileSync(mapa[id])})});
   await p.route('https://fonts.g*/**',r=>r.abort());
@@ -29,7 +29,7 @@ const wa=await p.getAttribute('.boton','href');
 t('WhatsApp con la obra escrita',wa.startsWith('https://wa.me/584148090559?text=')&&decodeURIComponent(wa).includes('«Marina» de Enrique Lobo (ref. o1)'),decodeURIComponent(wa).slice(0,110));
 t('medidas legibles',(await p.locator('dl').innerText()).includes('103 cm de alto × 150 de ancho'));
 await p.screenshot({path:'web-2-obra.png',fullPage:true});
-await p.goto('http://localhost:8765/#/obra/o3');await p.waitForSelector('.ficha');
+await p.goto('http://localhost:8765/#/obra/o3');await p.waitForTimeout(700);await p.waitForSelector('.ficha');
 t('vendida: botón de algo parecido',(await p.textContent('.boton')).trim()==='Buscar algo parecido');
 await p.click('#n-artistas');await p.waitForSelector('.lista-artistas');
 t('artistas en orden, con conteo',(await p.locator('.lista-artistas li').evaluateAll(ls=>ls.map(l=>l.querySelector('b').textContent+' '+l.querySelector('span').textContent))).join('|')==='Enrique Lobo 2 obras|María Lea Cerdá 1 obra|Pedro Gentil 1 obra');
