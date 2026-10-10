@@ -38,7 +38,9 @@ var INSTRUCCIONES = {
 var MUEBLES = {
   consola: 'a dark tropical-hardwood console table',
   aparador: 'a light natural-wood sideboard',
-  pedestal: 'a plain white gallery plinth standing on a polished terracotta tile floor'
+  pedestal: 'a plain white gallery plinth standing on a polished terracotta tile floor',
+  mesita: 'a small solid tropical-wood side table',
+  repisa: 'a floating natural-wood wall shelf'
 };
 function instruccionEntorno_(mueble, altoCm) {
   return 'Edit this photo. Keep the main art object in the centre of the photo, together with the base or stand that belongs to it, EXACTLY as it is: ' +
@@ -47,7 +49,7 @@ function instruccionEntorno_(mueble, altoCm) {
     'the object now stands on ' + mueble + ' against a plain off-white plaster wall in a bright apartment on the Venezuelan Caribbean coast, soft daylight from the left, calm and uncluttered, ' +
     'nothing else on the furniture, a palm leaf entering at one edge of the frame. ' +
     'Real size matters: the object with its base is ' + altoCm + ' cm tall. Draw the furniture and the room at the true scale for an object of that height ' +
-    '(a console or sideboard top is about 80 cm above the floor and 40 cm deep, a gallery plinth is about 100 cm tall), never larger or smaller to flatter it. ' +
+    '(a console or sideboard top is about 80 cm above the floor and 40 cm deep, a gallery plinth is about 100 cm tall, a side table is about 45 cm tall and 45 cm wide, a wall shelf is about 4 cm thick), never larger or smaller to flatter it. ' +
     'Keep the camera distance of the original photo too: if the object fills the frame, this is a close-up and only the small part of the furniture top and wall that fits around it at true scale will be visible. Never shrink the object to show the whole piece of furniture. ' +
     'The new furniture and room must follow the same camera height, angle and perspective as the original photo so the object sits naturally on the surface, with a realistic contact shadow and a soft cast shadow. ' +
     'Do NOT redraw, restyle, simplify, crop, move, resize or relight the object or its base. Same framing and aspect ratio. Photorealistic photograph.';

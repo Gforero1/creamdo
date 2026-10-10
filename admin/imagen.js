@@ -213,7 +213,8 @@
     var xc = sala.centroX;
     var pxcm = (lineal(sala.suelo, xc) - lineal(sala.techo, xc)) / sala.paredCm;
     var z = sala.zona, anchoPx = anchoCm * pxcm, altoPx = altoCm * pxcm;
-    if (anchoPx > (z[2] - z[0]) || altoPx > (z[3] - z[1])) return { cabe: false, pxcm: pxcm };
+    // maxCm: las salas de formato pequeño no admiten obras grandes aunque quepan en la pared de la foto
+    if (anchoPx > (z[2] - z[0]) || altoPx > (z[3] - z[1]) || (sala.maxCm && Math.max(anchoCm, altoCm) > sala.maxCm)) return { cabe: false, pxcm: pxcm };
     xc = Math.min(z[2] - anchoPx / 2, Math.max(z[0] + anchoPx / 2, xc));
     var centroCm = sala.centroCm;
     function lado(x, c) {

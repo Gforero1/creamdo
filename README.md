@@ -51,6 +51,12 @@ Un cuadro pequeño colgado en una sala entera se ve como un sello. Cuando la obr
 
 Para esculturas pequeñas, la orden a Gemini pide mantener la distancia de cámara de la foto: si la pieza llena el encuadre, es un primer plano y solo se ve el trozo de mueble que cabe a escala.
 
+## Salas para formatos pequeños
+
+Tres plantillas de primer plano, generadas con Gemini y calibradas con los objetos de la foto: `rincon` (mesita, unos 6,4 px/cm), `escritorio` (7,8 px/cm) y `repisa` (10,5 px/cm). Una obra de 36 cm ocupa entre un quinto y un tercio del ancho. Llevan `maxCm` para que no se ofrezcan con obras grandes. La escala es aproximada: sale de las medidas pedidas a Gemini (escritorio de 110 cm, repisa de 80) y del tamaño de los objetos, no de una medición real.
+
+Para esculturas hay dos muebles más pensados para piezas pequeñas: mesita y repisa.
+
 ## Panel: esculturas y objetos
 
 Una escultura no se puede enderezar con cuatro esquinas, así que va por otro camino. La regla es la misma: **la pieza nunca la dibuja la IA**.

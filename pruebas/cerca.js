@@ -25,4 +25,10 @@ await p.click('#b-cerca');await p.click('#b-sin-ia');await p.waitForSelector('#p
 t('el resultado sale con la vista de cerca',await p.evaluate(()=>{const c=document.getElementById('c-final');return Math.abs(c.height/c.width-1.25)<0.02}));
 await ir(150,103,'romanilla');
 t('obra grande: sin botón de cerca, sala entera',!(await p.locator('#b-cerca').isVisible())&&(await medir()).w===1024);
+// salas para formatos pequeños
+await ir(36,20,'repisa');let r=await medir();
+t('repisa: una obra de 36 cm ocupa un tercio del ancho, sin recorte',r.w===1152&&r.parte>0.3&&r.parte<0.36&&!(await p.locator('#b-cerca').isVisible()),JSON.stringify(r));
+await p.click('[data-sala=rincon]');await p.waitForTimeout(600);r=await medir();t('rincón: la obra cabe y queda dentro de la pared libre',r.dentro&&r.parte>0.18);
+await p.click('[data-sala=escritorio]');await p.waitForTimeout(600);r=await medir();t('escritorio: la obra cabe',r.dentro&&r.parte>0.2);
+await ir(150,103,'romanilla');t('obra grande: las salas pequeñas se desactivan solas',await p.evaluate(()=>['rincon','escritorio','repisa'].every(s=>document.querySelector('[data-sala='+s+']').disabled)));
 await b.close();console.log(ok+' bien, '+mal+' mal');})();

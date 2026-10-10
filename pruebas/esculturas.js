@@ -65,7 +65,7 @@ await p.waitForSelector('#amb-espera:not(.oculto)');t('progreso: lista de pasos 
 await p.waitForSelector('#amb-marco:not(.oculto)',{timeout:90000});
 e=await estado();t('imagen recogida de Drive, con un fallo de descarga reintentado',fallosImg>=2);
 t('respuestas perdidas: se repiten solas y la pieza queda en sala',e.perdidas===2&&(await texto('amb-nota')).includes('Imagen referencial'),'perdidas '+e.perdidas);
-t('muebles: tres opciones con foto, una elegida',await p.locator('#obj-muebles button img').count()===3&&await p.locator('#obj-muebles [aria-pressed=true]').count()===1&&await p.inputValue('#obj-mueble')==='pedestal');
+t('muebles: tres opciones con foto, una elegida',await p.locator('#obj-muebles button img').count()===5&&await p.locator('#obj-muebles [aria-pressed=true]').count()===1&&await p.inputValue('#obj-mueble')==='pedestal');
 await p.screenshot({path:'cap-20-muebles.png',fullPage:true});
 
 // 4. silueta que no corresponde a la foto: no se inventa nada

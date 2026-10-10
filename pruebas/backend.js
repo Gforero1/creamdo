@@ -40,6 +40,7 @@ t('entorno: mueble inventado no llama',post({accion:'integrar',token:e.token,tip
 t('entorno: tipo heredado no cuela',post({accion:'integrar',token:e.token,tipo:'constructor',imagen:img}).ok===false&&llamadas.length===antes);
 const en=post({accion:'integrar',token:e.token,tipo:'entorno',mueble:'aparador',altoCm:'40.26',imagen:img});
 t('entorno: lleva el mueble de la lista y el alto real',en.ok&&txt().includes('light natural-wood sideboard')&&txt().includes('is 40.3 cm tall'));
+t('entorno: muebles para piezas pequeñas',post({accion:'integrar',token:e.token,tipo:'entorno',mueble:'repisa',altoCm:12,imagen:img}).ok&&txt().includes('floating natural-wood wall shelf')&&post({accion:'integrar',token:e.token,tipo:'entorno',mueble:'mesita',altoCm:12,imagen:img}).ok&&txt().includes('small solid tropical-wood side table')&&txt().includes('this is a close-up'));
 const ma=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img});t('máscara: pide la base incluida',ma.ok&&txt().includes('INCLUDES the base'));}
 {const cr=[];ctx.Drive={Files:{create:(m,b)=>{cr.push(m);return{id:'tmp'+cr.length+'xxxxxxxxxxxx'}},list:()=>({files:[{id:'viejo1'}]}),update:(m,id)=>{cr.push({papelera:id})}},Permissions:{create:()=>{}}};ctx.Utilities.base64Decode=s=>[1];ctx.Utilities.newBlob=()=>({});
 const im=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img});
