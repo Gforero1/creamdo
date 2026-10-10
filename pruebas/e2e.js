@@ -5,7 +5,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/ch
 const nueva=async(api)=>{const c=await b.newContext({...devices['Pixel 7']});const p=await c.newPage();
   p.on('pageerror',e=>{mal++;console.log('ERROR DE PAGINA',e.message)});
   await p.route('**/config.js*',r=>r.fulfill({contentType:'text/javascript',body:`window.CREAMDO={API:${JSON.stringify(api)}};`}));
-  await p.goto('http://localhost:8765/panel/');return p;};
+  await p.goto('http://localhost:8765/admin/');return p;};
 const visible=(p,id)=>p.evaluate(i=>document.getElementById(i).classList.contains('visible'),id);
 const textoAvisos=(p,id)=>p.evaluate(i=>document.getElementById(i).innerText,id);
 

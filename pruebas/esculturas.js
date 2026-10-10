@@ -6,7 +6,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/ch
 const c=await b.newContext({...devices['Pixel 7']});const p=await c.newPage();
 p.on('pageerror',e=>{mal++;console.log('ERROR DE PAGINA',e.message)});
 await p.route('**/config.js*',r=>r.fulfill({contentType:'text/javascript',body:"window.CREAMDO={API:'http://localhost:8765/api'};"}));
-await p.goto('http://localhost:8765/panel/');await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-foto.visible');
+await p.goto('http://localhost:8765/admin/');await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-foto.visible');
 const texto=id=>p.evaluate(i=>document.getElementById(i).innerText,id);
 const veri=()=>p.evaluate(()=>JSON.stringify(Object.fromEntries(Object.entries(__panel.E.verificacionObjeto||{}).map(([k,v])=>[k,Math.round(v*1000)/1000]))));
 await fetch('http://localhost:8765/reiniciar');

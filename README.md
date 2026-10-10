@@ -1,6 +1,6 @@
 # Creamdo Art
 
-Web pública de la galería (raíz del sitio) y panel privado para cargar obras (`/panel/`).
+Web pública de la galería (raíz del sitio) y panel privado para cargar obras (`/admin/`).
 
 ## Web pública
 
@@ -43,9 +43,9 @@ pegar la foto real encima, para que la obra publicada sea siempre la obra de ver
 
 ## Piezas
 
-- `panel/index.html`, `panel/app.js`: las pantallas del panel.
-- `panel/imagen.js`: enderezar, corregir luz, colocar a escala, localizar y repegar. Corre en el navegador.
-- `panel/salas.js` y `panel/salas/`: las plantillas de sala y su calibración.
+- `admin/index.html`, `admin/app.js`: las pantallas del panel.
+- `admin/imagen.js`: enderezar, corregir luz, colocar a escala, localizar y repegar. Corre en el navegador.
+- `admin/salas.js` y `admin/salas/`: las plantillas de sala y su calibración.
 - `config.js`: la URL del backend. No es un secreto.
 - `apps-script/`: backend que vive en una hoja de Google. Guarda la clave de Gemini y la
   contraseña del panel en las propiedades del script. Ninguna de las dos está en este repositorio.

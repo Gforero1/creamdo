@@ -381,7 +381,7 @@ function doGet(e) {
   if (e && e.parameter && e.parameter.catalogo) {
     try { return json_(catalogoPublico_()); } catch (err) { console.error(err); return json_({ ok: false, obras: [] }); }
   }
-  return json_({ ok: true, servicio: 'creamdo-panel' });
+  return json_({ ok: true, servicio: 'creamdo-admin' });
 }
 
 function doPost(e) {
