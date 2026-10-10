@@ -48,6 +48,7 @@ function instruccionEntorno_(mueble, altoCm) {
     'nothing else on the furniture, a palm leaf entering at one edge of the frame. ' +
     'Real size matters: the object with its base is ' + altoCm + ' cm tall. Draw the furniture and the room at the true scale for an object of that height ' +
     '(a console or sideboard top is about 80 cm above the floor and 40 cm deep, a gallery plinth is about 100 cm tall), never larger or smaller to flatter it. ' +
+    'Keep the camera distance of the original photo too: if the object fills the frame, this is a close-up and only the small part of the furniture top and wall that fits around it at true scale will be visible. Never shrink the object to show the whole piece of furniture. ' +
     'The new furniture and room must follow the same camera height, angle and perspective as the original photo so the object sits naturally on the surface, with a realistic contact shadow and a soft cast shadow. ' +
     'Do NOT redraw, restyle, simplify, crop, move, resize or relight the object or its base. Same framing and aspect ratio. Photorealistic photograph.';
 }

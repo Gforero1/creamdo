@@ -45,6 +45,12 @@ La casilla "Ponerla en la portada de la web" marca la obra destacada (una a la v
 
 El admin usa la misma identidad que la web: Archivo, blanco y negro, y los tres colores del logo como acento.
 
+## Obras pequeñas: vista de cerca
+
+Un cuadro pequeño colgado en una sala entera se ve como un sello. Cuando la obra ocupa menos de 230 px de ancho en la plantilla, el admin recorta la sala alrededor de ella (vertical 4:5, dejando asomar el mueble de debajo) y la amplía antes de integrarla. La obra sigue a su tamaño real respecto al mueble; solo cambia el encuadre. Un botón permite volver a la sala completa.
+
+Para esculturas pequeñas, la orden a Gemini pide mantener la distancia de cámara de la foto: si la pieza llena el encuadre, es un primer plano y solo se ve el trozo de mueble que cabe a escala.
+
 ## Panel: esculturas y objetos
 
 Una escultura no se puede enderezar con cuatro esquinas, así que va por otro camino. La regla es la misma: **la pieza nunca la dibuja la IA**.

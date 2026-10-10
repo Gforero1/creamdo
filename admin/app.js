@@ -218,7 +218,7 @@
   // ---------- 4. sala ----------
   function prepararSalas() {
     var cont = $('salas'); cont.textContent = ''; limpiar('sala-avisos');
-    $('m-montaje').classList.add('oculto'); $('sala-acciones').classList.add('oculto');
+    $('m-montaje').classList.add('oculto'); $('sala-acciones').classList.add('oculto'); $('b-cerca').classList.add('oculto'); $('cerca-nota').classList.add('oculto');
     window.SALAS.forEach(function (s) {
       var r = I.cuadroEnSala(s, E.medidas[0], E.medidas[1]);
       var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', 'false'); b.dataset.sala = s.id;
@@ -231,20 +231,49 @@
     });
     if (!cont.querySelector('button:not(:disabled)')) aviso('sala-avisos', 'Esta obra no cabe en ninguna de las salas. Revisa las medidas.', 'grave');
   }
+  // Una obra pequeña en una sala entera se ve como un sello. Para esas hay una vista de cerca:
+  // se recorta la sala alrededor de la obra (que sigue a su tamaño real respecto al mueble) y se amplía.
+  var PEQUENA = 230;   // ancho en píxeles de la plantilla por debajo del cual se ofrece la vista de cerca
+  function vistaDeCerca(img, s, q) {
+    var xs = q.map(function (p) { return p[0]; }), ys = q.map(function (p) { return p[1]; });
+    var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+    // El recorte es vertical (4:5). Tiene que caber la obra con aire y asomar el mueble de debajo,
+    // que empieza donde acaba la zona libre de la pared (s.zona[3]).
+    var mueble = s.zona ? s.zona[3] : y1;
+    var ch = Math.max(375, (x1 - x0) / 0.42 * 1.25, (y1 - y0) / 0.5, (mueble - y0) / 0.72);
+    ch = Math.min(ch, img.height, img.width * 1.25); var cw = ch / 1.25;
+    var cx = Math.max(0, Math.min(img.width - cw, (x0 + x1) / 2 - cw / 2));
+    var cy = Math.min(mueble + ch * 0.2 - ch, y0 - ch * 0.07);
+    cy = Math.max(0, Math.min(img.height - ch, cy));
+    var k = Math.min(3, 1280 / cw), zona = I.lienzo(cw * k, ch * k), z = zona.getContext('2d');
+    z.imageSmoothingQuality = 'high'; z.drawImage(img, cx, cy, cw, ch, 0, 0, zona.width, zona.height);
+    return { img: zona, q: q.map(function (p) { return [(p[0] - cx) * k, (p[1] - cy) * k]; }),
+             sala: { id: s.id, sombra: [Math.round(s.sombra[0] * k), Math.round(s.sombra[1] * k)] } };
+  }
+  function pintarMontaje() {
+    var s = E.salaBase, q = E.qBase, img = E.salaImgs[s.id], pequena = Math.abs(q[1][0] - q[0][0]) < PEQUENA;
+    if (pequena && E.cerca) { var v = vistaDeCerca(img, s, q); E.q = v.q; E.montaje = I.montar(v.img, v.sala, E.obra, v.q); }
+    else { E.q = q; E.montaje = I.montar(img, s, E.obra, q); }
+    var c = $('c-montaje'); c.width = E.montaje.width; c.height = E.montaje.height; c.getContext('2d').drawImage(E.montaje, 0, 0);
+    $('b-cerca').classList.toggle('oculto', !pequena);
+    $('b-cerca').textContent = E.cerca ? 'Ver la sala completa' : 'Ver la obra de cerca';
+    $('cerca-nota').classList.toggle('oculto', !pequena);
+    $('cerca-nota').textContent = E.cerca ? 'Es una obra pequeña: se muestra de cerca para que se aprecie. Sigue a su tamaño real respecto al mueble.' : 'Sala completa. La obra es pequeña y se ve de lejos.';
+  }
   function elegirSala(s, q, boton) {
     Array.prototype.forEach.call($('salas').children, function (b) { b.setAttribute('aria-pressed', b === boton ? 'true' : 'false'); });
     limpiar('sala-avisos');
     var listo = E.salaImgs[s.id] ? Promise.resolve(E.salaImgs[s.id]) : cargarImagen('salas/' + s.id + '.jpg').then(function (i) { E.salaImgs[s.id] = i; return i; });
-    listo.then(function (img) {
-      E.sala = s; E.q = q; E.montaje = I.montar(img, s, E.obra, q);
-      var c = $('c-montaje'); c.width = E.montaje.width; c.height = E.montaje.height; c.getContext('2d').drawImage(E.montaje, 0, 0);
+    listo.then(function () {
+      E.sala = s; E.salaBase = s; E.qBase = q; E.cerca = true;
+      pintarMontaje();
       $('m-montaje').classList.remove('oculto'); $('sala-acciones').classList.remove('oculto');
       $('m-montaje').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      if (Math.abs(q[1][0] - q[0][0]) < 110) aviso('sala-avisos', 'Es una obra pequeña y en esta sala se verá de lejos.');
       $('b-integrar').disabled = !API;
       if (!API) aviso('sala-avisos', 'La integración con IA aún no está conectada. Puedes usar el montaje sin IA.');
     }).catch(function () { aviso('sala-avisos', 'No se pudo cargar la sala. Comprueba la conexión.', 'grave'); });
   }
+  $('b-cerca').addEventListener('click', function () { E.cerca = !E.cerca; pintarMontaje(); });
   $('b-sala-atras').addEventListener('click', function () { ir('medidas'); });
   $('b-sin-ia').addEventListener('click', function () { E.final = E.montaje; E.conIA = false; mostrarResultado(); });
   $('b-integrar').addEventListener('click', integrar);
