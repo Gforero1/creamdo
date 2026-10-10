@@ -38,6 +38,15 @@ await p.screenshot({path:'cap-6-resultado.png',fullPage:true});
 fs.writeFileSync('e2e-final-romanilla.jpg',Buffer.from((await p.evaluate(()=>__panel.E.final.toDataURL('image/jpeg',.92))).split(',')[1],'base64'));
 const [dl]=await Promise.all([p.waitForEvent('download'),p.click('#b-descargar')]);
 t('nombre de archivo',dl.suggestedFilename()==='creamdo-marina-romanilla.jpg',dl.suggestedFilename());
+// enviar a Shopify
+t('título y artista ya rellenos',await p.inputValue('#sh-titulo')==='Marina'&&await p.inputValue('#sh-artista')==='Enrique Lobo');
+await p.fill('#sh-precio','1000');await p.fill('#sh-tecnica','Acrílico sobre lienzo');await p.click('#b-shopify');
+await p.waitForSelector('#sh-avisos .bien');
+t('envía a Shopify y enseña el enlace',(await textoAvisos(p,'sh-avisos')).includes('borrador')&&await p.evaluate(()=>document.querySelector('#sh-avisos a').href)==='https://admin.shopify.com/store/creamdo/products/123');
+const ult=await (await fetch('http://localhost:8765/api/ultima',{method:'POST',body:'{}'})).json();
+t('manda la obra real y la escena',ult.n===2&&ult.precio===1000&&ult.tipo==='Pintura',JSON.stringify(ult));
+t('no deja enviar dos veces',await p.evaluate(()=>document.getElementById('b-shopify').disabled));
+await p.screenshot({path:'cap-10-shopify.png',fullPage:true});
 // otra sala donde la IA devuelve una escena que no corresponde: debe descartarla
 t('sala pequeña desactivada para obra de 150 cm',await p.evaluate(()=>document.querySelector('[data-sala=colonial]').disabled));
 await p.route('**/api',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({ok:true,mime:'image/png',imagen:fs.readFileSync('gemini-A.png').toString('base64')})}));

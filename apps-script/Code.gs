@@ -13,6 +13,8 @@ var HORAS_SESION = 12;
 var FALLOS_MAX = 8;                // intentos de clave antes de bloquear
 var MINUTOS_BLOQUEO = 10;
 var MAX_IMAGEN_B64 = 7 * 1024 * 1024;
+var SHOPIFY_VERSION = '2026-07';
+var TIPOS_OBRA = ['Pintura', 'Retablo'];
 
 // El texto que recibe Gemini se decide aquí, no en la web: así la clave no sirve
 // para pedirle cualquier otra cosa aunque alguien robe una sesión.
@@ -32,8 +34,10 @@ function onOpen() {
     .addItem('1. Preparar la hoja', 'instalar')
     .addItem('2. Guardar la clave de Gemini', 'guardarClaveGemini')
     .addItem('3. Crear o cambiar la contraseña del panel', 'crearContrasena')
+    .addItem('4. Conectar con Shopify', 'conectarShopify')
     .addSeparator()
     .addItem('Ver estado', 'verEstado')
+    .addItem('Probar la conexión con Shopify', 'probarShopify')
     .addToUi();
 }
 
@@ -80,7 +84,125 @@ function verEstado() {
   SpreadsheetApp.getUi().alert(
     'Clave de Gemini: ' + (p.getProperty('GEMINI_API_KEY') ? 'guardada' : 'FALTA') + '\n' +
     'Contraseña del panel: ' + (p.getProperty('PANEL_HUELLA') ? 'creada' : 'FALTA') + '\n' +
+    'Shopify: ' + (p.getProperty('SHOPIFY_CLIENT_SECRET') ? 'conectado a ' + p.getProperty('SHOPIFY_TIENDA') : 'sin conectar') + '\n' +
     'Imágenes generadas hoy: ' + hoy + ' de ' + LIMITE_DIARIO);
+}
+
+// ---------- Shopify: conexión ----------
+function conectarShopify() {
+  var ui = SpreadsheetApp.getUi(), p = PropertiesService.getScriptProperties();
+  var t = ui.prompt('Shopify 1 de 3', 'Dominio de la tienda, por ejemplo creamdo.myshopify.com', ui.ButtonSet.OK_CANCEL);
+  if (t.getSelectedButton() !== ui.Button.OK) return;
+  var tienda = t.getResponseText().trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(tienda)) { ui.alert('Tiene que ser un dominio .myshopify.com. No se guardó nada.'); return; }
+  var a = ui.prompt('Shopify 2 de 3', 'Client ID de la app (Dev Dashboard > la app > Settings).', ui.ButtonSet.OK_CANCEL);
+  if (a.getSelectedButton() !== ui.Button.OK) return;
+  var b = ui.prompt('Shopify 3 de 3', 'Client secret de la app.', ui.ButtonSet.OK_CANCEL);
+  if (b.getSelectedButton() !== ui.Button.OK) return;
+  var id = a.getResponseText().trim(), secreto = b.getResponseText().trim();
+  if (id.length < 16 || secreto.length < 16) { ui.alert('Eso no parecen las credenciales. No se guardó nada.'); return; }
+  p.setProperty('SHOPIFY_TIENDA', tienda); p.setProperty('SHOPIFY_CLIENT_ID', id); p.setProperty('SHOPIFY_CLIENT_SECRET', secreto);
+  CacheService.getScriptCache().remove('shopify_token');
+  probarShopify();
+}
+
+function probarShopify() {
+  var ui = SpreadsheetApp.getUi();
+  try {
+    var r = shopify_('query { shop { name myshopifyDomain } }', {});
+    ui.alert('Conexión correcta con la tienda "' + r.shop.name + '".');
+  } catch (err) {
+    ui.alert('No se pudo conectar con Shopify.\n\n' + err.message);
+  }
+}
+
+// Pide a Shopify un token de 24 horas con las credenciales de la app y lo guarda unas horas.
+function tokenShopify_() {
+  var cache = CacheService.getScriptCache(), guardado = cache.get('shopify_token');
+  if (guardado) return guardado;
+  var p = PropertiesService.getScriptProperties();
+  var tienda = p.getProperty('SHOPIFY_TIENDA'), id = p.getProperty('SHOPIFY_CLIENT_ID'), secreto = p.getProperty('SHOPIFY_CLIENT_SECRET');
+  if (!tienda || !id || !secreto) throw new Error('Shopify aún no está conectado');
+  var r = UrlFetchApp.fetch('https://' + tienda + '/admin/oauth/access_token', {
+    method: 'post', muteHttpExceptions: true,
+    payload: { grant_type: 'client_credentials', client_id: id, client_secret: secreto }
+  });
+  var j; try { j = JSON.parse(r.getContentText()); } catch (err) { j = {}; }
+  if (r.getResponseCode() !== 200 || !j.access_token) {
+    throw new Error('Shopify rechazó las credenciales (código ' + r.getResponseCode() + (j.error ? ', ' + j.error : '') + ')');
+  }
+  cache.put('shopify_token', j.access_token, 5 * 3600);
+  return j.access_token;
+}
+
+function shopify_(consulta, variables) {
+  var tienda = PropertiesService.getScriptProperties().getProperty('SHOPIFY_TIENDA');
+  var r = UrlFetchApp.fetch('https://' + tienda + '/admin/api/' + SHOPIFY_VERSION + '/graphql.json', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'X-Shopify-Access-Token': tokenShopify_() },
+    payload: JSON.stringify({ query: consulta, variables: variables })
+  });
+  var j; try { j = JSON.parse(r.getContentText()); } catch (err) { j = null; }
+  if (r.getResponseCode() === 401) CacheService.getScriptCache().remove('shopify_token');
+  if (r.getResponseCode() !== 200 || !j || j.errors) {
+    console.error('Shopify ' + r.getResponseCode() + ' ' + String(r.getContentText()).slice(0, 500));
+    throw new Error('Shopify respondió con un error (código ' + r.getResponseCode() + ')');
+  }
+  return j.data;
+}
+
+// Crea la obra en Shopify como BORRADOR, con la foto real primero y las imágenes en sala después.
+function publicar_(d) {
+  if (!sesionValida_(d.token)) return { ok: false, error: 'sesion' };
+  var titulo = limpioTexto_(d.titulo, 80), artista = limpioTexto_(d.artista, 80), tecnica = limpioTexto_(d.tecnica, 80);
+  var ancho = Number(d.anchoCm), alto = Number(d.altoCm), precio = Number(d.precio);
+  var tipo = TIPOS_OBRA.indexOf(d.tipoObra) >= 0 ? d.tipoObra : TIPOS_OBRA[0];
+  if (!titulo || !artista) return { ok: false, error: 'Faltan el título y el artista' };
+  if (!(ancho >= 5 && ancho <= 400 && alto >= 5 && alto <= 400)) return { ok: false, error: 'Medidas no válidas' };
+  var imgs = Array.isArray(d.imagenes) ? d.imagenes.slice(0, 4) : [];
+  if (!imgs.length) return { ok: false, error: 'No hay imágenes que enviar' };
+  for (var i = 0; i < imgs.length; i++) {
+    var dato = String(imgs[i].datos || '');
+    if (!/^[A-Za-z0-9+/=]+$/.test(dato) || dato.length < 1000 || dato.length > MAX_IMAGEN_B64) return { ok: false, error: 'Imagen no válida' };
+  }
+  try {
+    var base = (titulo + '-' + artista).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'obra';
+    var entradas = imgs.map(function (im, n) {
+      return { resource: 'IMAGE', httpMethod: 'POST', mimeType: 'image/jpeg', filename: base + '-' + (n + 1) + '.jpg' };
+    });
+    var st = shopify_('mutation subir($input: [StagedUploadInput!]!) { stagedUploadsCreate(input: $input) { stagedTargets { url resourceUrl parameters { name value } } userErrors { field message } } }', { input: entradas }).stagedUploadsCreate;
+    if (st.userErrors.length) throw new Error(st.userErrors[0].message);
+    var medios = st.stagedTargets.map(function (t, n) {
+      var carga = {};
+      t.parameters.forEach(function (q) { carga[q.name] = q.value; });
+      carga.file = Utilities.newBlob(Utilities.base64Decode(imgs[n].datos), 'image/jpeg', entradas[n].filename);
+      var r = UrlFetchApp.fetch(t.url, { method: 'post', payload: carga, muteHttpExceptions: true });
+      if (r.getResponseCode() >= 300) throw new Error('No se pudo subir la imagen ' + (n + 1) + ' (código ' + r.getResponseCode() + ')');
+      return { originalSource: t.resourceUrl, mediaContentType: 'IMAGE', alt: limpioTexto_(imgs[n].alt, 120) || titulo + ', de ' + artista };
+    });
+    var descripcion = '<p><strong>' + html_(titulo) + '</strong>, de ' + html_(artista) + '.</p>' +
+      '<p>' + (tecnica ? html_(tecnica) + '. ' : '') + 'Medidas: ' + numero_(alto) + ' cm de alto por ' + numero_(ancho) + ' cm de ancho.</p>' +
+      (medios.length > 1 ? '<p>Las imágenes en sala son referenciales: muestran la obra a escala en un espacio decorado.</p>' : '');
+    var pc = shopify_('mutation crear($product: ProductCreateInput!, $media: [CreateMediaInput!]) { productCreate(product: $product, media: $media) { product { id handle title status variants(first: 1) { nodes { id } } } userErrors { field message } } }', {
+      product: { title: titulo + ' - ' + artista, descriptionHtml: descripcion, vendor: 'creamdo', productType: tipo, tags: [artista, tipo], status: 'DRAFT' },
+      media: medios
+    }).productCreate;
+    if (pc.userErrors.length) throw new Error(pc.userErrors[0].message);
+    var prod = pc.product, aviso = '';
+    if (precio > 0 && prod.variants.nodes.length) {
+      var pv = shopify_('mutation precio($productId: ID!, $variants: [ProductVariantsBulkInput!]!) { productVariantsBulkUpdate(productId: $productId, variants: $variants) { productVariants { id price } userErrors { field message } } }', {
+        productId: prod.id, variants: [{ id: prod.variants.nodes[0].id, price: precio.toFixed(2) }]
+      }).productVariantsBulkUpdate;
+      if (pv.userErrors.length) aviso = 'La obra se creó, pero no se pudo poner el precio.';
+    }
+    var tienda = PropertiesService.getScriptProperties().getProperty('SHOPIFY_TIENDA').replace('.myshopify.com', '');
+    registrar_(d, 'shopify ok');
+    return { ok: true, titulo: prod.title, aviso: aviso, enlace: 'https://admin.shopify.com/store/' + tienda + '/products/' + prod.id.split('/').pop() };
+  } catch (err) {
+    registrar_(d, 'shopify error');
+    console.error(err);
+    return { ok: false, error: err.message };
+  }
 }
 
 // ---------- web app ----------
@@ -94,6 +216,7 @@ function doPost(e) {
   try {
     if (d.accion === 'entrar') return json_(entrar_(d));
     if (d.accion === 'integrar') return json_(integrar_(d));
+    if (d.accion === 'publicar') return json_(publicar_(d));
     return json_({ ok: false, error: 'Acción desconocida' });
   } catch (err) {
     console.error(err);
@@ -190,6 +313,15 @@ function registrar_(d, resultado) {
 function limpio_(v) {
   var s = String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').slice(0, 120);
   return /^[=+\-@]/.test(s) ? "'" + s : s;
+}
+function limpioTexto_(v, max) {
+  return String(v == null ? '' : v).replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+}
+function html_(t) {
+  return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function numero_(n) {
+  return String(Math.round(n * 10) / 10).replace('.', ',');
 }
 function huella_(texto) {
   return hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, texto, Utilities.Charset.UTF_8));

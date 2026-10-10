@@ -4,7 +4,7 @@
   var I = window.Imagen, API = (window.CREAMDO && window.CREAMDO.API) || '';
   var $ = function (id) { return document.getElementById(id); };
   var E = { token: null, foto: null, esquinas: null, recortada: false, obraRecta: null, ganancia: null, obra: null,
-            sala: null, q: null, montaje: null, final: null, conIA: false, salaImgs: {} };
+            sala: null, q: null, montaje: null, final: null, conIA: false, salaImgs: {}, escenas: [], enviada: false };
   var NITIDEZ_MINIMA = 90;
 
   // ---------- navegación ----------
@@ -187,7 +187,7 @@
   $('b-med-atras').addEventListener('click', function () { ir('esquinas'); });
   $('b-med-sig').addEventListener('click', function () {
     if (!medidas() || !E.obraRecta) { limpiar('med-avisos'); aviso('med-avisos', 'Escribe el ancho y el alto de la obra en centímetros.', 'grave'); return; }
-    E.obra = obraCorregida(); E.sala = null; prepararSalas(); ir('sala');
+    E.obra = obraCorregida(); E.sala = null; E.escenas = []; E.enviada = false; prepararSalas(); ir('sala');
   });
 
   // ---------- 4. sala ----------
@@ -263,6 +263,11 @@
     else if (E.fallida) aviso('res-avisos', 'La IA movió o cambió la obra, así que se descartó su versión. Esta es la versión sin IA. Puedes volver y repetir.');
     $('b-compartir').classList.toggle('oculto', !(navigator.canShare && window.File));
     E.fallida = false;
+    // cada sala generada para esta obra se guarda para enviarla a la tienda
+    E.escenas = E.escenas.filter(function (x) { return x.sala !== E.sala.id; });
+    E.escenas.push({ sala: E.sala.id, nombre: E.sala.nombre, lienzo: E.final });
+    if (E.escenas.length > 3) E.escenas.shift();
+    prepararShopify();
     ir('resultado');
   }
   function nombreArchivo() {
@@ -285,8 +290,52 @@
   $('b-otra-sala').addEventListener('click', function () { ir('sala'); });
   $('b-nueva').addEventListener('click', function () {
     E.foto = E.obra = E.obraRecta = E.montaje = E.final = null;
-    ['ancho', 'alto', 'titulo', 'artista'].forEach(function (id) { $(id).value = ''; });
+    ['ancho', 'alto', 'titulo', 'artista', 'sh-titulo', 'sh-artista', 'sh-precio', 'sh-tecnica'].forEach(function (id) { $(id).value = ''; });
+    E.escenas = []; E.enviada = false;
     ir('foto');
+  });
+
+  // ---------- enviar a Shopify ----------
+  function prepararShopify() {
+    $('shopify').classList.toggle('oculto', !API);
+    if (!$('sh-titulo').value) $('sh-titulo').value = $('titulo').value;
+    if (!$('sh-artista').value) $('sh-artista').value = $('artista').value;
+    var n = E.escenas.length;
+    $('sh-cuenta').textContent = 'Se enviarán la foto de la obra y ' + (n === 1 ? 'esta imagen en sala.' : 'las ' + n + ' imágenes en sala que has generado.');
+    limpiar('sh-avisos');
+    $('b-shopify').disabled = E.enviada; $('b-shopify').textContent = E.enviada ? 'Ya está en Shopify' : 'Enviar a Shopify como borrador';
+  }
+  function jpeg(lienzo, maximo) {
+    var k = Math.min(1, maximo / Math.max(lienzo.width, lienzo.height));
+    var c = k < 1 ? I.escalar(lienzo, lienzo.width * k, lienzo.height * k) : lienzo;
+    return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+  }
+  $('b-shopify').addEventListener('click', function () {
+    var titulo = $('sh-titulo').value.trim(), artista = $('sh-artista').value.trim(), b = $('b-shopify');
+    limpiar('sh-avisos');
+    if (!titulo || !artista) { aviso('sh-avisos', 'Escribe el título y el artista.', 'grave'); return; }
+    if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
+    b.disabled = true; b.textContent = 'Enviando…';
+    var imagenes = [{ datos: jpeg(E.obra, 2000), alt: titulo + ', de ' + artista }];
+    E.escenas.forEach(function (x) { imagenes.push({ datos: jpeg(x.lienzo, 2600), alt: titulo + ' en ' + x.nombre.toLowerCase() + ' (imagen referencial)' }); });
+    llamar({ accion: 'publicar', token: E.token, titulo: titulo, artista: artista, tipoObra: $('sh-tipo').value, tecnica: $('sh-tecnica').value,
+             precio: parseFloat($('sh-precio').value) || 0, anchoCm: E.medidas[0], altoCm: E.medidas[1], sala: E.sala.id, imagenes: imagenes })
+      .then(function (r) {
+        if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
+        E.enviada = true;
+        var d = document.createElement('div'); d.className = 'aviso bien';
+        d.appendChild(document.createTextNode('"' + r.titulo + '" ya está en Shopify como borrador. '));
+        if (/^https:\/\/admin\.shopify\.com\//.test(r.enlace || '')) {
+          var a = document.createElement('a'); a.href = r.enlace; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Abrir en Shopify'; d.appendChild(a);
+        }
+        $('sh-avisos').appendChild(d);
+        if (r.aviso) aviso('sh-avisos', r.aviso);
+      })
+      .catch(function (e) {
+        if (e.sesion) { guardarToken(null); ir('entrar'); return; }
+        aviso('sh-avisos', e.message === 'Failed to fetch' ? 'No hay conexión con el servidor. Inténtalo de nuevo.' : e.message, 'grave');
+      })
+      .then(function () { b.disabled = E.enviada; b.textContent = E.enviada ? 'Ya está en Shopify' : 'Enviar a Shopify como borrador'; });
   });
 
   // ---------- arranque ----------

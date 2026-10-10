@@ -37,3 +37,32 @@ t('error de Gemini sin filtrar detalle',f.ok===false&&!JSON.stringify(f).include
 props['USO_2026-10-10']='40';t('tope diario',post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img}).error.includes('tope'));
 for(let i=0;i<8;i++)post({accion:'entrar',clave:'no'});t('bloqueo tras 8 fallos',post({accion:'entrar',clave:'clave-de-prueba'}).error.includes('Demasiados'));
 console.log(ok+' pruebas bien, '+mal+' mal');
+// ---- Shopify ----
+(function(){
+  delete props['USO_2026-10-10'];delete cache.fallos;
+  const e=post({accion:'entrar',clave:'clave-de-prueba'});let ok2=0,mal2=0;const t2=(n,c)=>{c?ok2++:(mal2++,console.log('FALLA:',n))};
+  const img='C'.repeat(4000);const base={accion:'publicar',token:e.token,titulo:'Marina <b>',artista:'Enrique Lobo',tipoObra:'Pintura',tecnica:'Acrílico',precio:1000,anchoCm:150,altoCm:103,imagenes:[{datos:img,alt:'a'},{datos:img,alt:'b'}]};
+  t2('sin conectar avisa',post(base).error.includes('conectado'));
+  props.SHOPIFY_TIENDA='creamdo.myshopify.com';props.SHOPIFY_CLIENT_ID='id-de-prueba-0000000';props.SHOPIFY_CLIENT_SECRET='SECRETO-FALSO-SHOPIFY';
+  const vistas=[];
+  ctx.Utilities.base64Decode=s=>Array.from(Buffer.from(s,'base64'));ctx.Utilities.newBlob=(b,m,n)=>({blob:true,n});
+  ctx.UrlFetchApp.fetch=(u,o)=>{vistas.push({u,o});let body={},code=200;
+    if(u.endsWith('/admin/oauth/access_token'))body={access_token:'TOKEN-TEMPORAL',expires_in:86399};
+    else if(u.includes('/graphql.json')){const q=JSON.parse(o.payload);
+      if(q.query.includes('stagedUploadsCreate'))body={data:{stagedUploadsCreate:{userErrors:[],stagedTargets:q.variables.input.map((x,i)=>({url:'https://subida.example/'+i,resourceUrl:'https://subida.example/r'+i,parameters:[{name:'key',value:'k'+i}]}))}}};
+      else if(q.query.includes('productCreate'))body={data:{productCreate:{userErrors:[],product:{id:'gid://shopify/Product/987',handle:'marina',title:q.variables.product.title,status:'DRAFT',variants:{nodes:[{id:'gid://shopify/ProductVariant/1'}]}}}}};
+      else body={data:{productVariantsBulkUpdate:{userErrors:[],productVariants:[{id:'x',price:'1000.00'}]}}};}
+    else code=201;
+    return{getResponseCode:()=>code,getContentText:()=>JSON.stringify(body)}};
+  const r=post(base);
+  t2('crea el borrador',r.ok&&r.enlace==='https://admin.shopify.com/store/creamdo/products/987');
+  const pc=JSON.parse(vistas.find(v=>v.o.payload&&typeof v.o.payload==='string'&&v.o.payload.includes('productCreate')).o.payload).variables;
+  t2('borrador, título saneado y dos imágenes',pc.product.status==='DRAFT'&&pc.product.title==='Marina b - Enrique Lobo'&&pc.media.length===2&&!pc.product.descriptionHtml.includes('<b>'));
+  t2('medidas en la descripción',pc.product.descriptionHtml.includes('103 cm de alto por 150 cm de ancho'));
+  t2('token en cabecera, no en la URL',vistas.filter(v=>v.u.includes('graphql')).every(v=>v.o.headers['X-Shopify-Access-Token']==='TOKEN-TEMPORAL'&&!v.u.includes('TOKEN')));
+  t2('la respuesta no contiene secretos',!JSON.stringify(r).includes('SECRETO')&&!JSON.stringify(r).includes('TOKEN-TEMPORAL'));
+  t2('pide el token una sola vez',vistas.filter(v=>v.u.endsWith('access_token')).length===1);
+  t2('sin título no envía',post({...base,titulo:''}).ok===false);
+  t2('sin sesión no envía',post({...base,token:'x'}).error==='sesion');
+  console.log('Shopify: '+ok2+' pruebas bien, '+mal2+' mal');
+})();
