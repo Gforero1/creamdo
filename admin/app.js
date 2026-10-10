@@ -9,9 +9,13 @@
 
   // ---------- navegación ----------
   function ir(paso) {
-    ['entrar', 'foto', 'esquinas', 'medidas', 'sala', 'resultado', 'objeto', 'obras', 'editar'].forEach(function (p) {
+    ['entrar', 'inicio', 'pieza', 'foto', 'esquinas', 'medidas', 'sala', 'resultado', 'objeto', 'obras', 'editar'].forEach(function (p) {
       $('p-' + p).classList.toggle('visible', p === paso);
     });
+    // la barra dice siempre dónde está: en Inicio (todo lo de añadir) o en Mis obras
+    var enObras = paso === 'obras' || paso === 'editar';
+    $('b-inicio')[enObras ? 'removeAttribute' : 'setAttribute']('aria-current', 'page');
+    $('b-ver-obras')[enObras ? 'setAttribute' : 'removeAttribute']('aria-current', 'page');
     window.scrollTo(0, 0);
     if (paso === 'esquinas') requestAnimationFrame(pintarEsquinas);
   }
@@ -44,8 +48,8 @@
     b.disabled = true; b.textContent = 'Comprobando…'; err.classList.add('oculto');
     llamar({ accion: 'entrar', clave: $('clave').value }).then(function (r) {
       if (!r.ok || !r.token) throw new Error(r.error || 'No se pudo entrar');
-      guardarToken(r.token); $('clave').value = ''; $('b-salir').classList.remove('oculto'); $('b-ver-obras').classList.remove('oculto');
-      ir(E.obra ? 'sala' : 'foto');
+      guardarToken(r.token); $('clave').value = ''; $('b-salir').classList.remove('oculto'); $('barra').classList.remove('oculto');
+      ir(E.obra ? 'sala' : 'inicio');
     }).catch(function (e) {
       err.textContent = e.message === 'Failed to fetch' ? 'No hay conexión con el servidor. Inténtalo de nuevo.' : e.message;
       err.classList.remove('oculto');
@@ -302,7 +306,7 @@
     E.foto = E.obra = E.obraRecta = E.montaje = E.final = null;
     ['ancho', 'alto', 'titulo', 'artista', 'cat-titulo', 'cat-artista', 'cat-precio', 'cat-tecnica'].forEach(function (id) { $(id).value = ''; });
     E.escenas = []; E.enviada = false;
-    ir('foto');
+    ir('inicio');
   });
 
   // ---------- guardar en el catálogo ----------
@@ -356,7 +360,7 @@
   $('archivos-obj').addEventListener('change', function () {
     var fs = Array.prototype.slice.call(this.files || [], 0, 4); this.value = '';
     if (!fs.length) return;
-    var err = $('foto-error'); err.classList.add('oculto');
+    var err = $('pieza-error'); err.classList.add('oculto');
     Promise.all(fs.map(function (f) {
       var url = URL.createObjectURL(f);
       return cargarImagen(url).then(function (img) {
@@ -372,7 +376,7 @@
       ir('objeto');
     }).catch(function () { err.textContent = 'No se pudo abrir alguna de las fotos.'; err.classList.remove('oculto'); });
   });
-  $('b-obj-atras').addEventListener('click', function () { ir('foto'); });
+  $('b-obj-atras').addEventListener('click', function () { ir('pieza'); });
   $('b-obj-guardar').addEventListener('click', function () {
     enviarObra({ titulo: $('obj-titulo').value.trim(), artista: $('obj-artista').value.trim(), tipoObra: $('obj-tipo').value, tecnica: $('obj-tecnica').value,
                  precio: parseFloat($('obj-precio').value) || 0, altoCm: parseFloat($('obj-alto').value) || 0, anchoCm: parseFloat($('obj-ancho').value) || 0,
@@ -463,10 +467,16 @@
         }
         est.addEventListener('change', function () { cambiar('estado', est.value); });
         pr.addEventListener('change', function () { cambiar('precio', parseFloat(pr.value) || 0); });
-        var ed = document.createElement('button'); ed.className = 'editar'; ed.textContent = 'Editar'; ed.setAttribute('aria-label', 'Editar ' + o.titulo);
+        var ed = document.createElement('button'); ed.className = 'editar'; ed.textContent = 'Editar fotos y datos'; ed.setAttribute('aria-label', 'Editar ' + o.titulo);
         ed.addEventListener('click', function () { abrirEdicion(o); });
-        if (o.destacada) { var sello = document.createElement('small'); sello.textContent = 'En la portada de la web'; sello.style.color = 'var(--magenta)'; t.appendChild(sello); }
-        fila.appendChild(est); fila.appendChild(pr); t.insertBefore(s, t.firstChild); t.insertBefore(b, t.firstChild); t.appendChild(fila); t.appendChild(ed); d.appendChild(im); d.appendChild(t); cont.appendChild(d);
+        var sellos = document.createElement('div'), se = document.createElement('span'); se.className = 'sello ' + o.estado; se.textContent = o.estado; sellos.appendChild(se);
+        if (o.destacada) { var sp = document.createElement('span'); sp.className = 'sello portada'; sp.textContent = 'En la portada de la web'; sellos.appendChild(sp); }
+        t.appendChild(sellos);
+        est.addEventListener('change', function () { se.className = 'sello ' + est.value; se.textContent = est.value; });
+        var c1 = document.createElement('label'), c2 = document.createElement('label'), e1 = document.createElement('span'), e2 = document.createElement('span');
+        e1.className = e2.className = 'campo'; e1.textContent = 'Estado'; e2.textContent = 'Precio en $';
+        c1.appendChild(e1); c1.appendChild(est); c2.appendChild(e2); c2.appendChild(pr); pr.placeholder = 'A solicitud';
+        fila.appendChild(c1); fila.appendChild(c2); t.insertBefore(s, t.firstChild); t.insertBefore(b, t.firstChild); t.appendChild(fila); t.appendChild(ed); d.appendChild(im); d.appendChild(t); cont.appendChild(d);
       });
     }).catch(function (e) {
       if (e.message === 'sesion') { guardarToken(null); ir('entrar'); return; }
@@ -540,14 +550,20 @@
   });
 
   $('b-ver-obras').addEventListener('click', cargarObras);
-  $('b-obras-nueva').addEventListener('click', function () { ir('foto'); });
+  $('b-obras-nueva').addEventListener('click', function () { ir('inicio'); });
+  $('b-inicio').addEventListener('click', function () { ir('inicio'); });
+  $('b-ini-cuadro').addEventListener('click', function () { ir('foto'); });
+  $('b-ini-pieza').addEventListener('click', function () { $('pieza-error').classList.add('oculto'); ir('pieza'); });
+  $('b-ini-obras').addEventListener('click', cargarObras);
+  $('b-foto-atras').addEventListener('click', function () { ir('inicio'); });
+  $('b-pieza-atras').addEventListener('click', function () { ir('inicio'); });
 
   // ---------- arranque ----------
   var guardado = null; try { guardado = sessionStorage.getItem('creamdo'); } catch (e) {}
   if (!API) {
-    $('cabecera').textContent = 'Obra en sala · sin IA'; ir('foto');
+    $('b-foto-atras').classList.add('oculto'); ir('foto');
   } else if (tokenVigente(guardado)) {
-    E.token = guardado; $('b-salir').classList.remove('oculto'); $('b-ver-obras').classList.remove('oculto'); ir('foto');
+    E.token = guardado; $('b-salir').classList.remove('oculto'); $('barra').classList.remove('oculto'); ir('inicio');
   } else {
     ir('entrar');
   }

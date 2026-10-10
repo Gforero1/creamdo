@@ -16,7 +16,7 @@ t('arranca en acceso',await visible(p,'p-entrar'));
 await p.fill('#clave','mala');await p.click('#b-entrar');await p.waitForSelector('#entrar-error:not(.oculto)');
 t('clave mala muestra error',(await p.innerText('#entrar-error')).includes('incorrecta'));
 await p.screenshot({path:'cap-1-entrar.png'});
-await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-foto.visible');
+await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-inicio.visible');
 await p.screenshot({path:'cap-2-foto.png'});
 await p.setInputFiles('#archivo','marina.jpg');await p.waitForSelector('#p-esquinas.visible');await p.waitForTimeout(300);
 console.log('   nitidez foto limpia',Math.round(await p.evaluate(()=>__panel.E.nitidez)));
@@ -59,7 +59,7 @@ await p.click('#b-nueva');await p.setInputFiles('#archivo','marina.jpg');await p
 await p.fill('#ancho','380');await p.fill('#alto','261');await p.waitForTimeout(500);await p.click('#b-med-sig');await p.waitForSelector('#p-sala.visible');
 t('obra enorme: ninguna sala disponible',await p.evaluate(()=>!document.querySelector('#salas button:not(:disabled)'))&&(await textoAvisos(p,'sala-avisos')).includes('no cabe'));
 // escultura: fotos tal cual
-await p.reload();await p.waitForSelector('#p-foto.visible');await p.setInputFiles('#archivos-obj',['marina.jpg','mala.jpg']);await p.waitForSelector('#p-objeto.visible');
+await p.reload();await p.waitForSelector('#p-inicio.visible');await p.setInputFiles('#archivos-obj',['marina.jpg','mala.jpg']);await p.waitForSelector('#p-objeto.visible');
 t('escultura: enseña las dos fotos',await p.evaluate(()=>document.querySelectorAll('#obj-fotos img').length)===2);
 await p.click('#b-obj-guardar');t('escultura: pide título y artista',(await textoAvisos(p,'obj-avisos')).includes('título'));
 await p.fill('#obj-titulo','Virgen de Coromoto');await p.fill('#obj-artista','María Lea Cerdá');await p.click('#b-obj-guardar');
@@ -77,7 +77,7 @@ await p.screenshot({path:'cap-12-obras.png',fullPage:true});
 await p.context().close();
 
 // --- 2. foto mala ---
-p=await nueva('http://localhost:8765/api');await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-foto.visible');
+p=await nueva('http://localhost:8765/api');await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-inicio.visible');
 await p.setInputFiles('#archivo','mala.jpg');await p.waitForSelector('#p-esquinas.visible');
 console.log('   nitidez foto mala',Math.round(await p.evaluate(()=>__panel.E.nitidez)),'| avisos:',await textoAvisos(p,'esq-avisos'));
 await p.evaluate(()=>__panel.ponerEsquinas([[1290,150],[330,250],[300,860],[1330,930]]));   // desordenadas a propósito

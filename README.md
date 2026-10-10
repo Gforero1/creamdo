@@ -20,6 +20,15 @@ Sale del logo de la marca, no de una plantilla:
 - **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.
 - **Textos:** los de la galería (bio de Instagram y tienda anterior) y datos reales de cada obra.
 
+## Admin: que se entienda a la primera
+
+Pensado para alguien que no es de ordenadores:
+
+- Al entrar hay una pantalla de inicio con tres opciones grandes: subir un cuadro, subir una escultura u objeto, ver y cambiar mis obras.
+- Una barra fija (Inicio, Mis obras, Ver la web) dice siempre dónde está.
+- Antes de pedir fotos se enseñan tres consejos, distintos para cuadros y para esculturas.
+- En "Mis obras" cada obra lleva un sello con su estado, los campos tienen nombre y una leyenda explica qué se ve en la web con cada estado.
+
 ## Idiomas
 
 La web está en español e inglés. Carga en el idioma del dispositivo (español si el dispositivo está en español, inglés en cualquier otro caso) y recuerda lo que la persona elija con el selector ES / EN.

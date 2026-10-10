@@ -80,7 +80,23 @@ button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underl
 .obra small{color:var(--gris);display:block;margin-bottom:8px}
 .obra .dos{gap:8px}
 .obra select,.obra input{padding:9px 8px;margin-bottom:0;font-size:15px}
-.obra .editar{width:auto;padding:9px 14px;font-size:14px;margin:8px 0 0;background:none;color:var(--tinta)}
+.obra .editar{padding:13px 14px;font-size:15px;margin:10px 0 0;background:none;color:var(--tinta)}
+.obra .campo{display:block;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gris);margin:0 0 4px;font-weight:600}
+.obra .sello{display:inline-block;font-size:11.5px;font-weight:650;letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;margin:0 6px 8px 0;border:1px solid var(--tinta)}
+.obra .sello.Publicada{background:var(--tinta);color:#fff}.obra .sello.Vendida{border-color:var(--magenta);color:var(--magenta)}.obra .sello.Borrador,.obra .sello.Oculta{border-color:var(--linea);color:var(--gris)}.obra .sello.portada{border-color:var(--cian);color:#0B5E7E}
+.leyenda{list-style:none;margin:0 0 18px;padding:12px 14px;background:var(--papel2);font-size:14px;color:var(--gris)}
+.leyenda b{color:var(--tinta);font-weight:650}
+.barra{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--tinta);margin:-12px 0 26px}
+.barra button,.barra a{appearance:none;display:block;width:auto;margin:0;padding:14px 4px;border:0;border-right:1px solid var(--tinta);border-radius:0;background:#fff;color:var(--tinta);font:650 14px/1 var(--texto);text-align:center;text-decoration:none;cursor:pointer}
+.barra > :last-child{border-right:0}
+.barra [aria-current=page]{background:var(--tinta);color:#fff}
+.opciones{display:grid;gap:12px;margin:6px 0 20px}
+.opcion{appearance:none;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;width:100%;margin:0;padding:20px 16px 20px 20px;background:#fff;color:var(--tinta);border:1px solid var(--tinta);border-radius:0;text-align:left;cursor:pointer;font:inherit}
+.opcion::after{content:"→";font-size:22px;font-weight:300}
+.opcion i{display:block;width:9px;height:44px;transform:skewX(22deg)}
+.opcion b{display:block;font:650 19px/1.2 var(--titulo);margin-bottom:4px}
+.opcion small{display:block;font-size:14.5px;line-height:1.4;color:var(--gris);font-weight:400}
+.opcion:active{background:var(--papel2)}
 .fotos-ed{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
 .fotos-ed figure{margin:0;border:1px solid var(--linea);background:var(--papel2)}
 .fotos-ed img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
@@ -97,7 +113,13 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
 </head>
 <body>
 <main>
-  <header class="marca"><a href="../" aria-label="Ver la web"><img src="../marca/monograma.png" alt="" width="480" height="303"><span><b>CREAMDO</b><i>ADMIN</i></span></a><span><button class="enlace oculto" id="b-ver-obras" style="padding:0;font-size:13px">Obras</button> <span id="cabecera">Obra en sala</span></span></header>
+  <header class="marca"><a href="../" aria-label="Ver la web"><img src="../marca/monograma.png" alt="" width="480" height="303"><span><b>CREAMDO</b><i>ADMIN</i></span></a><span id="cabecera" class="oculto">Obra en sala</span></header>
+
+  <nav class="barra oculto" id="barra" aria-label="Secciones del admin">
+    <button type="button" id="b-inicio">Inicio</button>
+    <button type="button" id="b-ver-obras">Mis obras</button>
+    <a href="../" target="_blank" rel="noopener">Ver la web</a>
+  </nav>
 
   <section id="p-entrar">
     <p class="paso">Acceso</p>
@@ -111,8 +133,33 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     <p class="nota" id="sin-backend"></p>
   </section>
 
+  <section id="p-inicio">
+    <p class="paso">Inicio</p>
+    <h1>¿Qué quieres <em>hacer</em>?</h1>
+    <div class="opciones">
+      <button type="button" class="opcion" id="b-ini-cuadro"><i style="background:var(--cian)"></i><span><b>Subir un cuadro</b><small>Pintura o retablo. Le tomas una foto y la ves colgada en una sala.</small></span></button>
+      <button type="button" class="opcion" id="b-ini-pieza"><i style="background:var(--naranja)"></i><span><b>Subir una escultura u objeto</b><small>Esculturas, tallas, cajas, chupetas. Con sus fotos y, si quieres, en una sala.</small></span></button>
+      <button type="button" class="opcion" id="b-ini-obras"><i style="background:var(--magenta)"></i><span><b>Ver y cambiar mis obras</b><small>Precio, fotos, medidas, marcar como vendida o poner una en la portada.</small></span></button>
+    </div>
+    <p class="nota">Lo que guardes aparece en la web en un par de minutos.</p>
+  </section>
+
+  <section id="p-pieza">
+    <p class="paso">Escultura u objeto</p>
+    <h1>Las fotos <em>de la pieza</em></h1>
+    <ol class="consejos">
+      <li><i>1</i><span>Una sola pieza por foto, completa, con su base.</span></li>
+      <li><i>2</i><span>Delante de una pared lisa o una sábana, sin otras cosas detrás.</span></li>
+      <li><i>3</i><span>A la altura de la pieza, no desde arriba. Sin flash.</span></li>
+    </ol>
+    <label class="boton acento" for="archivos-obj">Tomar o elegir fotos</label>
+    <p class="nota">Puedes elegir hasta 4 fotos de la misma pieza. La primera es la que se usa para la sala.</p>
+    <div id="pieza-error" class="aviso grave oculto"></div>
+    <button class="enlace" id="b-pieza-atras">Volver al inicio</button>
+  </section>
+
   <section id="p-foto">
-    <p class="paso">Paso 1 de 5</p>
+    <p class="paso">Cuadro · paso 1 de 5</p>
     <h1>La foto <em>de la obra</em></h1>
     <ol class="consejos">
       <li><i>1</i><span>De frente a la obra, con el teléfono derecho.</span></li>
@@ -121,9 +168,8 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     </ol>
     <label class="boton acento" for="archivo" id="l-archivo">Tomar o elegir foto</label>
     <input type="file" id="archivo" accept="image/*">
-    <label class="boton otro" for="archivos-obj">Escultura u objeto</label>
-    <input type="file" id="archivos-obj" accept="image/*" multiple>
     <div id="foto-error" class="aviso grave oculto"></div>
+    <button class="enlace" id="b-foto-atras">Volver al inicio</button>
   </section>
 
   <section id="p-objeto">
@@ -187,7 +233,12 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
 
   <section id="p-obras">
     <p class="paso">Catálogo</p>
-    <h1>Las obras <em>guardadas</em></h1>
+    <h1>Mis <em>obras</em></h1>
+    <ul class="leyenda">
+      <li><b>Publicada</b> se ve en la web.</li>
+      <li><b>Vendida</b> se ve en la web con el rótulo de vendida.</li>
+      <li><b>Borrador</b> y <b>Oculta</b> no se ven.</li>
+    </ul>
     <div id="obras-avisos"></div>
     <div id="obras-lista"></div>
     <button id="b-obras-nueva" class="acento">Añadir una obra</button>
@@ -264,11 +315,12 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     </div>
   </section>
 
+  <input type="file" id="archivos-obj" accept="image/*" multiple>
   <footer>Uso interno de Creamdo Art. <button class="enlace oculto" id="b-salir" style="padding:0;font-size:12.5px">Cerrar sesión</button></footer>
 </main>
-<script src="../config.js?v=8"></script>
-<script src="salas.js?v=8"></script>
-<script src="imagen.js?v=8"></script>
-<script src="app.js?v=8"></script>
+<script src="../config.js?v=9"></script>
+<script src="salas.js?v=9"></script>
+<script src="imagen.js?v=9"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>

@@ -15,8 +15,14 @@ await p.fill('#clave','html');await p.click('#b-entrar');await p.waitForSelector
 t('respuesta que no es JSON: mensaje claro',(await p.innerText('#entrar-error')).includes('no contestó bien'));
 await p.fill('#clave','portada');await p.click('#b-entrar');await p.waitForFunction(()=>document.getElementById('b-entrar').textContent==='Entrar');
 t('respuesta sin token no deja entrar',await p.evaluate(()=>document.getElementById('p-entrar').classList.contains('visible'))&&(await p.innerText('#entrar-error')).includes('no contestó bien'));
-await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-foto.visible');
+await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-inicio.visible');
 await p.screenshot({path:'cap-16-admin-foto.png'});
+t('inicio: tres opciones claras y barra visible',await p.locator('#p-inicio .opcion').count()===3&&await p.locator('#barra').isVisible()&&await p.getAttribute('#b-inicio','aria-current')==='page');
+await p.click('#b-ini-cuadro');t('subir un cuadro lleva a la foto',await p.evaluate(()=>document.getElementById('p-foto').classList.contains('visible')));
+await p.click('#b-foto-atras');await p.click('#b-ini-pieza');t('escultura: primero los consejos de foto',await p.evaluate(()=>document.getElementById('p-pieza').classList.contains('visible'))&&(await p.innerText('#p-pieza')).includes('Una sola pieza por foto'));
+await p.screenshot({path:'cap-19-admin-pieza.png'});
+await p.click('#b-inicio');await p.click('#b-ini-obras');await p.waitForSelector('#p-obras.visible');t('mis obras: la barra lo marca',await p.getAttribute('#b-ver-obras','aria-current')==='page'&&await p.getAttribute('#b-inicio','aria-current')===null);
+await p.click('#b-inicio');
 // una obra con dos fotos reales y una en sala
 await p.setInputFiles('#archivos-obj',['marina.jpg','mala.jpg','t-salaA.jpg']);await p.waitForSelector('#p-objeto.visible');
 await p.fill('#obj-titulo','Marina');await p.fill('#obj-artista','Enrique Lobo');await p.fill('#obj-alto','103');await p.fill('#obj-precio','1000');await p.click('#b-obj-guardar');await p.waitForSelector('#obj-avisos .bien');
@@ -37,7 +43,7 @@ await p.click('#b-ed-guardar');await p.waitForSelector('#p-obras.visible');await
 const e=await estado(),ca=e.cambios[e.cambios.length-1],o=e.obras[0];
 t('envía todos los campos',ca.titulo==='Marina azul'&&ca.artista==='E. Lobo'&&ca.estado==='Publicada'&&ca.tecnica==='Acrílico sobre lienzo'&&ca.anchoCm===150&&ca.precio===0&&ca.destacada===true);
 t('fotos: la tercera pasa a portada, una quitada, una nueva',ca.imagenes.length===3&&ca.imagenes[0].id==='idfalso2xxxxxxxx'&&ca.imagenes[1].id==='idfalso1xxxxxxxx'&&String(ca.imagenes[2].datos).startsWith('(foto'),JSON.stringify(ca.imagenes));
-t('la lista enseña el cambio y el sello de portada',(await p.locator('#obras-lista .obra').first().innerText()).includes('Marina azul')&&(await p.locator('#obras-lista .obra').first().innerText()).includes('portada de la web'));
+t('la lista enseña el cambio y el sello de portada',(await p.locator('#obras-lista .obra').first().innerText()).includes('Marina azul')&&(await p.locator('#obras-lista .obra').first().innerText()).toLowerCase().includes('portada de la web'));
 await p.screenshot({path:'cap-18-admin-obras.png',fullPage:true});
 // tope de 6 fotos y volver sin guardar
 await p.click('#obras-lista .obra .editar');await p.waitForSelector('#p-editar.visible');
