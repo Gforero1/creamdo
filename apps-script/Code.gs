@@ -16,7 +16,7 @@ var MAX_IMAGEN_B64 = 7 * 1024 * 1024;
 var SHOPIFY_VERSION = '2026-07';
 var TIPOS_OBRA = ['Pintura', 'Retablo', 'Escultura', 'Arte sacro', 'Objeto'];
 var ESTADOS = ['Borrador', 'Publicada', 'Vendida', 'Oculta'];
-var COLUMNAS = ['ID', 'Creada', 'Estado', 'Título', 'Artista', 'Tipo', 'Técnica', 'Ancho cm', 'Alto cm', 'Fondo cm', 'Precio USD', 'Imágenes', 'Actualizada'];
+var COLUMNAS = ['ID', 'Creada', 'Estado', 'Título', 'Artista', 'Tipo', 'Técnica', 'Ancho cm', 'Alto cm', 'Fondo cm', 'Precio USD', 'Imágenes', 'Actualizada', 'En sala'];
 
 // El texto que recibe Gemini se decide aquí, no en la web: así la clave no sirve
 // para pedirle cualquier otra cosa aunque alguien robe una sesión.
@@ -51,6 +51,7 @@ function instalar() {
     hoja.setFrozenRows(1);
   }
   var obras = libro.getSheetByName('Obras') || libro.insertSheet('Obras', 0);
+  if (obras.getLastRow() > 0) obras.getRange(1, 1, 1, COLUMNAS.length).setValues([COLUMNAS]).setFontWeight('bold');
   if (obras.getLastRow() === 0) {
     obras.appendRow(COLUMNAS);
     obras.setFrozenRows(1);
@@ -118,7 +119,8 @@ function hojaObras_() {
 function filaAObra_(f) {
   return { id: String(f[0]), creada: f[1] instanceof Date ? f[1].toISOString() : String(f[1]), estado: String(f[2]), titulo: String(f[3]), artista: String(f[4]),
     tipo: String(f[5]), tecnica: String(f[6]), anchoCm: Number(f[7]) || 0, altoCm: Number(f[8]) || 0, fondoCm: Number(f[9]) || 0,
-    precio: Number(f[10]) || 0, imagenes: String(f[11] || '').split(',').filter(function (x) { return /^[A-Za-z0-9_-]{10,}$/.test(x); }) };
+    precio: Number(f[10]) || 0, imagenes: String(f[11] || '').split(',').filter(function (x) { return /^[A-Za-z0-9_-]{10,}$/.test(x); }),
+    enSala: Math.max(0, Math.min(3, Number(f[13]) || 0)) };
 }
 
 function leerObras_() {
@@ -159,7 +161,7 @@ function guardarObra_(d) {
     return Drive.Files.create({ name: base + '-' + (n + 1) + '.jpg', parents: [carpeta] }, blob, { fields: 'id' }).id;
   });
   var cerrojo = LockService.getScriptLock(); cerrojo.waitLock(15000);
-  hojaObras_().appendRow([id, new Date(), estado, hoja_(titulo), hoja_(artista), tipo, hoja_(tecnica), ancho || '', alto, fondo || '', precio || '', ids.join(','), new Date()]);
+  hojaObras_().appendRow([id, new Date(), estado, hoja_(titulo), hoja_(artista), tipo, hoja_(tecnica), ancho || '', alto, fondo || '', precio || '', ids.join(','), new Date(), Math.max(0, Math.min(3, Number(d.enSala) || 0))]);
   cerrojo.releaseLock();
   CacheService.getScriptCache().remove('catalogo');
   return { ok: true, id: id, estado: estado, titulo: titulo };
@@ -309,7 +311,9 @@ function publicar_(d) {
 
 // ---------- web app ----------
 function doGet(e) {
-  if (e && e.parameter && e.parameter.catalogo) return json_(catalogoPublico_());
+  if (e && e.parameter && e.parameter.catalogo) {
+    try { return json_(catalogoPublico_()); } catch (err) { console.error(err); return json_({ ok: false, obras: [] }); }
+  }
   return json_({ ok: true, servicio: 'creamdo-panel' });
 }
 

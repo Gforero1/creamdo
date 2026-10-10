@@ -1,4 +1,13 @@
-# Creamdo · Obra en sala
+# Creamdo Art
+
+Web pública de la galería (raíz del sitio) y panel privado para cargar obras (`/panel/`).
+
+## Web pública
+
+`index.html` y `tienda.js` leen el catálogo del backend (`?catalogo=1`) y lo pintan: obras, ficha de obra, artistas.
+No hay carrito: cada obra abre WhatsApp con su nombre escrito. Solo salen obras en estado Publicada o Vendida.
+
+## Panel: obra en sala
 
 Panel privado de Creamdo Art. Se sube la foto de una pintura, se marcan sus esquinas y sus medidas,
 y el panel la coloca a escala en una sala. Una IA integra luz y sombra, y después el panel vuelve a
@@ -6,9 +15,9 @@ pegar la foto real encima, para que la obra publicada sea siempre la obra de ver
 
 ## Piezas
 
-- `index.html`, `app.js`: las cinco pantallas.
-- `imagen.js`: enderezar, corregir luz, colocar a escala, localizar y repegar. Corre en el navegador.
-- `salas.js` y `salas/`: las plantillas de sala y su calibración.
+- `panel/index.html`, `panel/app.js`: las pantallas del panel.
+- `panel/imagen.js`: enderezar, corregir luz, colocar a escala, localizar y repegar. Corre en el navegador.
+- `panel/salas.js` y `panel/salas/`: las plantillas de sala y su calibración.
 - `config.js`: la URL del backend. No es un secreto.
 - `apps-script/`: backend que vive en una hoja de Google. Guarda la clave de Gemini y la
   contraseña del panel en las propiedades del script. Ninguna de las dos está en este repositorio.
@@ -44,5 +53,5 @@ de los servicios de Google. Las imágenes de prueba no se suben al repositorio.
 
 ## Pendiente
 
-- Esculturas: necesitan recorte de fondo y plantillas de primer plano.
-- Enviar la obra a Shopify como borrador.
+- Esculturas en sala: necesitan recorte de fondo y plantillas de primer plano. Hoy se guardan con sus fotos tal cual.
+- El envío a Shopify está escrito en el backend pero sin uso: la cuenta actual no puede crear apps en esa tienda.

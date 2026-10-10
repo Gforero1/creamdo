@@ -333,7 +333,7 @@
     var imagenes = [{ datos: jpeg(E.obra, 1800) }];
     E.escenas.forEach(function (x) { imagenes.push({ datos: jpeg(x.lienzo, 2200) }); });
     enviarObra({ titulo: titulo, artista: artista, tipoObra: $('cat-tipo').value, tecnica: $('cat-tecnica').value, precio: parseFloat($('cat-precio').value) || 0,
-                 anchoCm: E.medidas[0], altoCm: E.medidas[1], estado: $('cat-publicar').checked ? 'Publicada' : 'Borrador', imagenes: imagenes },
+                 anchoCm: E.medidas[0], altoCm: E.medidas[1], estado: $('cat-publicar').checked ? 'Publicada' : 'Borrador', imagenes: imagenes, enSala: E.escenas.length },
                'cat-avisos', $('b-catalogo'), function () { E.enviada = true; });
   });
 

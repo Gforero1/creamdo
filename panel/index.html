@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Creamdo · Obra en sala</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#F3EEE4; --papel2:#EAE3D5; --tinta:#201A14; --gris:#6E6457; --linea:#CFC4B1;
+  --terracota:#A9472B; --terracota2:#8C3820; --aviso:#7A5A12; --avisofondo:#F2E3B8; --bien:#2F5D3A;
+  --titulo:"Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --texto:"Instrument Sans", system-ui, sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.5 var(--texto)}
+main{max-width:620px;margin:0 auto;padding:20px 18px 120px}
+header.marca{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--tinta);padding-bottom:10px;margin-bottom:26px}
+header.marca b{font:600 22px/1 var(--titulo);letter-spacing:.14em}
+header.marca span{font-size:13px;color:var(--gris)}
+.paso{font:500 13px/1 var(--texto);letter-spacing:.12em;text-transform:uppercase;color:var(--terracota);margin:0 0 8px}
+h1{font:500 38px/1.05 var(--titulo);margin:0 0 14px}
+h1 em,h2 em{font-style:italic;font-weight:500}
+h2{font:500 28px/1.1 var(--titulo);margin:34px 0 10px;padding-top:22px;border-top:1px solid var(--tinta)}
+select{width:100%;font:16px var(--texto);color:var(--tinta);background:#FBF8F2;border:1px solid var(--tinta);border-radius:2px;padding:13px 12px;margin-bottom:16px}
+.aviso a{color:inherit;font-weight:600}
+p{margin:0 0 14px}
+.nota{color:var(--gris);font-size:14.5px}
+section{display:none}
+section.visible{display:block}
+ol.consejos{list-style:none;padding:0;margin:0 0 22px;border-top:1px solid var(--linea)}
+ol.consejos li{display:grid;grid-template-columns:44px 1fr;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--linea)}
+ol.consejos li i{font:italic 500 26px/1 var(--titulo);color:var(--terracota)}
+label{display:block;font-size:13.5px;font-weight:500;margin:0 0 6px}
+input[type=text],input[type=password],input[type=number]{width:100%;font:16px var(--texto);color:var(--tinta);background:#FBF8F2;border:1px solid var(--tinta);border-radius:2px;padding:13px 12px;margin-bottom:16px}
+input:focus-visible,button:focus-visible{outline:2px solid var(--terracota);outline-offset:2px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+button,.boton{appearance:none;display:block;width:100%;text-align:center;font:600 16px/1 var(--texto);padding:17px 16px;border-radius:2px;border:1px solid var(--tinta);background:var(--tinta);color:var(--papel);cursor:pointer;margin:0 0 10px}
+button.otro,.boton.otro{background:transparent;color:var(--tinta)}
+button.acento,.boton.acento{background:var(--terracota);border-color:var(--terracota)}
+button.acento:active{background:var(--terracota2)}
+button:disabled{opacity:.45;cursor:default}
+button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underline;text-underline-offset:3px;padding:12px 0;font-weight:500;width:auto}
+.aviso{background:var(--avisofondo);color:var(--aviso);border-left:3px solid var(--aviso);padding:12px 14px;font-size:14.5px;margin:0 0 16px}
+.aviso.grave{background:#F3D9D0;color:#7A2414;border-color:#7A2414}
+.aviso.bien{background:#DDE7DA;color:var(--bien);border-color:var(--bien)}
+.lienzo{position:relative;margin:0 -18px 16px;background:#191512;touch-action:none}
+.lienzo canvas{display:block;width:100%;height:auto}
+.marco{margin:0 0 16px;background:var(--papel2);padding:10px}
+.marco canvas,.marco img{display:block;width:100%;height:auto}
+.salas{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 18px}
+.salas button{padding:0;background:none;border:1px solid var(--linea);color:var(--tinta);text-align:left;margin:0}
+.salas button img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}
+.salas button span{display:block;padding:9px 10px 2px;font:500 19px/1.1 var(--titulo)}
+.salas button small{display:block;padding:0 10px 10px;font-size:12.5px;color:var(--gris);font-weight:400;line-height:1.3}
+.salas button[aria-pressed=true]{border:2px solid var(--terracota)}
+.salas button:disabled img{filter:grayscale(1)}
+.deslizador{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin-bottom:16px;font-size:13.5px}
+.deslizador input{width:100%;accent-color:var(--terracota)}
+.casilla{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:400;margin-bottom:14px}
+.casilla input{width:20px;height:20px;accent-color:var(--terracota)}
+.espera{font:italic 500 24px/1.2 var(--titulo);padding:26px 0;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);margin-bottom:16px}
+.espera small{display:block;font:400 14px/1.4 var(--texto);color:var(--gris);margin-top:6px}
+.tres{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.tiras{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 18px}
+.tiras img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--papel2)}
+.obra{display:grid;grid-template-columns:84px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--linea)}
+.obra img{width:84px;height:84px;object-fit:cover;background:var(--papel2)}
+.obra b{font:500 20px/1.15 var(--titulo);display:block}
+.obra small{color:var(--gris);display:block;margin-bottom:8px}
+.obra .dos{gap:8px}
+.obra select,.obra input{padding:9px 8px;margin-bottom:0;font-size:15px}
+.oculto{display:none!important}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
+footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padding-top:12px;margin-top:34px}
+</style>
+</head>
+<body>
+<main>
+  <header class="marca"><b>CREAMDO</b><span><button class="enlace oculto" id="b-ver-obras" style="padding:0;font-size:13px">Obras</button> <span id="cabecera">Obra en sala</span></span></header>
+
+  <section id="p-entrar">
+    <p class="paso">Acceso</p>
+    <h1>Solo para <em>la galería</em></h1>
+    <form id="f-entrar">
+      <label for="clave">Contraseña</label>
+      <input type="password" id="clave" autocomplete="current-password" required>
+      <div id="entrar-error" class="aviso grave oculto"></div>
+      <button type="submit" id="b-entrar">Entrar</button>
+    </form>
+    <p class="nota" id="sin-backend"></p>
+  </section>
+
+  <section id="p-foto">
+    <p class="paso">Paso 1 de 5</p>
+    <h1>La foto <em>de la obra</em></h1>
+    <ol class="consejos">
+      <li><i>1</i><span>De frente a la obra, con el teléfono derecho.</span></li>
+      <li><i>2</i><span>Sin flash. Mejor con luz de ventana de lado.</span></li>
+      <li><i>3</i><span>Que se vea la obra entera y algo de pared alrededor.</span></li>
+    </ol>
+    <label class="boton acento" for="archivo" id="l-archivo">Tomar o elegir foto</label>
+    <input type="file" id="archivo" accept="image/*">
+    <label class="boton otro" for="archivos-obj">Escultura u objeto, sin sala</label>
+    <input type="file" id="archivos-obj" accept="image/*" multiple>
+    <div id="foto-error" class="aviso grave oculto"></div>
+  </section>
+
+  <section id="p-objeto">
+    <p class="paso">Escultura u objeto</p>
+    <h1>Datos <em>de la pieza</em></h1>
+    <div class="tiras" id="obj-fotos"></div>
+    <label for="obj-titulo">Título</label><input type="text" id="obj-titulo" maxlength="80">
+    <label for="obj-artista">Artista</label><input type="text" id="obj-artista" maxlength="80">
+    <div class="dos">
+      <div><label for="obj-tipo">Tipo</label><select id="obj-tipo"><option>Escultura</option><option>Arte sacro</option><option>Objeto</option></select></div>
+      <div><label for="obj-precio">Precio en $ (opcional)</label><input type="number" id="obj-precio" inputmode="decimal" min="0" step="1"></div>
+    </div>
+    <label for="obj-tecnica">Material o técnica (opcional)</label><input type="text" id="obj-tecnica" maxlength="80" placeholder="Madera tallada y policromada">
+    <div class="tres">
+      <div><label for="obj-alto">Alto (cm)</label><input type="number" id="obj-alto" inputmode="decimal" min="1" max="600" step="0.5"></div>
+      <div><label for="obj-ancho">Ancho (cm)</label><input type="number" id="obj-ancho" inputmode="decimal" min="1" max="600" step="0.5"></div>
+      <div><label for="obj-fondo">Fondo (cm)</label><input type="number" id="obj-fondo" inputmode="decimal" min="1" max="600" step="0.5"></div>
+    </div>
+    <label class="casilla"><input type="checkbox" id="obj-publicar"> Publicarla ya en la web</label>
+    <div id="obj-avisos"></div>
+    <button id="b-obj-guardar" class="acento">Guardar en el catálogo</button>
+    <button id="b-obj-atras" class="enlace">Volver</button>
+  </section>
+
+  <section id="p-obras">
+    <p class="paso">Catálogo</p>
+    <h1>Las obras <em>guardadas</em></h1>
+    <div id="obras-avisos"></div>
+    <div id="obras-lista"></div>
+    <button id="b-obras-nueva" class="acento">Añadir una obra</button>
+  </section>
+
+  <section id="p-esquinas">
+    <p class="paso">Paso 2 de 5</p>
+    <h1>Marca <em>las cuatro esquinas</em></h1>
+    <p class="nota">Arrastra cada punto hasta una esquina de la obra, por dentro del marco si lo tiene.</p>
+    <div id="esq-avisos"></div>
+    <div class="lienzo"><canvas id="c-esquinas"></canvas></div>
+    <button id="b-esq-sig" class="acento">Continuar</button>
+    <button id="b-recortada" class="otro">La foto ya es solo la obra</button>
+    <button id="b-otra-foto" class="enlace">Cambiar de foto</button>
+  </section>
+
+  <section id="p-medidas">
+    <p class="paso">Paso 3 de 5</p>
+    <h1>Medidas <em>y luz</em></h1>
+    <div class="dos">
+      <div><label for="ancho">Ancho (cm)</label><input type="number" id="ancho" inputmode="decimal" min="5" max="400" step="0.5"></div>
+      <div><label for="alto">Alto (cm)</label><input type="number" id="alto" inputmode="decimal" min="5" max="400" step="0.5"></div>
+    </div>
+    <div id="med-avisos"></div>
+    <div class="marco"><canvas id="c-obra"></canvas></div>
+    <label class="casilla" id="l-color"><input type="checkbox" id="color" checked> Corregir el color usando la pared</label>
+    <div class="deslizador"><span>Más oscura</span><input type="range" id="luz" min="0.6" max="1.6" step="0.02" value="1" aria-label="Luz de la obra"></div>
+    <p class="nota">Ajusta hasta que se parezca a la obra real. Si la foto salió mal, es mejor repetirla.</p>
+    <label for="titulo">Título (opcional)</label><input type="text" id="titulo" maxlength="80">
+    <label for="artista">Artista (opcional)</label><input type="text" id="artista" maxlength="80">
+    <button id="b-med-sig" class="acento">Continuar</button>
+    <button id="b-med-atras" class="enlace">Volver a las esquinas</button>
+  </section>
+
+  <section id="p-sala">
+    <p class="paso">Paso 4 de 5</p>
+    <h1>Elige <em>la sala</em></h1>
+    <div class="salas" id="salas"></div>
+    <div id="sala-avisos"></div>
+    <div class="marco oculto" id="m-montaje"><canvas id="c-montaje"></canvas></div>
+    <div id="sala-acciones" class="oculto">
+      <button id="b-integrar" class="acento">Integrar con IA</button>
+      <button id="b-sin-ia" class="otro">Usar así, sin IA</button>
+    </div>
+    <div class="espera oculto" id="espera">Colgando la obra…<small>Tarda cerca de medio minuto. No cierres esta página.</small></div>
+    <button id="b-sala-atras" class="enlace">Volver a medidas</button>
+  </section>
+
+  <section id="p-resultado">
+    <p class="paso">Paso 5 de 5</p>
+    <h1>Lista <em>para publicar</em></h1>
+    <div id="res-avisos"></div>
+    <div class="marco"><canvas id="c-final"></canvas></div>
+    <button id="b-descargar" class="acento">Guardar imagen</button>
+    <button id="b-compartir" class="otro oculto">Compartir</button>
+    <button id="b-otra-sala" class="otro">Probar otra sala</button>
+    <button id="b-nueva" class="enlace">Empezar con otra obra</button>
+    <p class="nota">Imagen referencial: la sala es un decorado y la obra es su foto real, colocada a escala.</p>
+
+    <div id="catalogo">
+      <h2>Guardar en <em>el catálogo</em></h2>
+      <p class="nota" id="cat-cuenta"></p>
+      <label for="cat-titulo">Título</label><input type="text" id="cat-titulo" maxlength="80">
+      <label for="cat-artista">Artista</label><input type="text" id="cat-artista" maxlength="80">
+      <div class="dos">
+        <div><label for="cat-tipo">Tipo</label><select id="cat-tipo"><option>Pintura</option><option>Retablo</option><option>Arte sacro</option></select></div>
+        <div><label for="cat-precio">Precio en $ (opcional)</label><input type="number" id="cat-precio" inputmode="decimal" min="0" step="1"></div>
+      </div>
+      <label for="cat-tecnica">Técnica (opcional)</label><input type="text" id="cat-tecnica" maxlength="80" placeholder="Acrílico sobre lienzo">
+      <label class="casilla"><input type="checkbox" id="cat-publicar"> Publicarla ya en la web</label>
+      <div id="cat-avisos"></div>
+      <button id="b-catalogo">Guardar en el catálogo</button>
+      <p class="nota">Sin marcar la casilla queda como borrador y se publica después desde "Obras".</p>
+    </div>
+  </section>
+
+  <footer>Uso interno de Creamdo Art. <button class="enlace oculto" id="b-salir" style="padding:0;font-size:12.5px">Cerrar sesión</button></footer>
+</main>
+<script src="../config.js"></script>
+<script src="salas.js"></script>
+<script src="imagen.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
