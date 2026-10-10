@@ -208,7 +208,7 @@ var OBRAS_INICIALES = [
   ['Turco', 'Bernardo Nieves', 'Pintura', 'Técnica mixta sobre lienzo', 90, 120, 890, ['FullSizeRender.jpg', 'IMG-8308.jpg']],
   ['Palomina', 'Enrique Lobo', 'Pintura', '', 150, 60, 1000, ['IMG-8562.jpg', 'IMG-8563.jpg', 'IMG-8564.jpg']],
   ['Marina', 'Enrique Lobo', 'Pintura', 'Acrílico', 150, 60, 1000, ['11AC2167-F020-4CDF-86F6-8AA0C5D19714.jpg', 'C5311E3A-5ED5-4CDC-A25A-2EB8E946E964.jpg', 'F2C1287A-0E0D-45C5-A359-177E5BE87794.jpg']],
-  ['Sin título', 'Hugo Newton', 'Pintura', '', 75, 95, 1200, ['6BE105A4-DF92-400F-B5F1-E00B63D630D6.jpg', 'CA4ED3C0-FEDD-4EDD-981F-3B1C93FE5158.jpg', 'BA19B1C1-84F4-4429-8AF6-916C9FFA64FE.jpg']],
+  ['Sin título', 'Hugo Newton', 'Pintura', '', 75, 95, 1200, ['6BE105A4-DF92-400F-B5F1-E00B63D630D6.jpg', 'CA4ED3C0-FED5-4EDD-981F-3B1C93FE5158.jpg', 'BA19B1C1-84F4-4429-8AF6-916C9FFA64FE.jpg']],
   ['Virgen de Coromoto', 'María Lea Cerdá', 'Arte sacro', 'Escultura', 12, 20, 115, ['IMG-9638.jpg']],
   ['Virgen de Rosario de Chiquinquirá', 'María Lea Cerdá', 'Arte sacro', 'Escultura', 12, 30, 115, ['IMG-9642.jpg']]
 ];
