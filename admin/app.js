@@ -9,7 +9,7 @@
 
   // ---------- navegación ----------
   function ir(paso) {
-    ['entrar', 'foto', 'esquinas', 'medidas', 'sala', 'resultado', 'objeto', 'obras'].forEach(function (p) {
+    ['entrar', 'foto', 'esquinas', 'medidas', 'sala', 'resultado', 'objeto', 'obras', 'editar'].forEach(function (p) {
       $('p-' + p).classList.toggle('visible', p === paso);
     });
     window.scrollTo(0, 0);
@@ -453,13 +453,82 @@
         }
         est.addEventListener('change', function () { cambiar('estado', est.value); });
         pr.addEventListener('change', function () { cambiar('precio', parseFloat(pr.value) || 0); });
-        fila.appendChild(est); fila.appendChild(pr); t.appendChild(b); t.appendChild(s); t.appendChild(fila); d.appendChild(im); d.appendChild(t); cont.appendChild(d);
+        var ed = document.createElement('button'); ed.className = 'editar'; ed.textContent = 'Editar'; ed.setAttribute('aria-label', 'Editar ' + o.titulo);
+        ed.addEventListener('click', function () { abrirEdicion(o); });
+        if (o.destacada) { var sello = document.createElement('small'); sello.textContent = 'En la portada de la web'; sello.style.color = 'var(--magenta)'; t.appendChild(sello); }
+        fila.appendChild(est); fila.appendChild(pr); t.insertBefore(s, t.firstChild); t.insertBefore(b, t.firstChild); t.appendChild(fila); t.appendChild(ed); d.appendChild(im); d.appendChild(t); cont.appendChild(d);
       });
     }).catch(function (e) {
       if (e.message === 'sesion') { guardarToken(null); ir('entrar'); return; }
       $('obras-lista').textContent = ''; aviso('obras-avisos', 'No se pudieron cargar las obras.', 'grave');
     });
   }
+  // ---------- editar una obra guardada ----------
+  // Cada foto es una que ya estaba ({id}) o una nueva ({lienzo}). Las de sala se quedan siempre al final.
+  var ed = null;
+  function abrirEdicion(o) {
+    var reales = o.imagenes.length - (o.enSala || 0);
+    ed = { id: o.id, fotos: o.imagenes.map(function (id, i) { return { id: id, sala: i >= reales }; }) };
+    $('ed-titulo').value = o.titulo; $('ed-artista').value = o.artista; $('ed-tipo').value = o.tipo; $('ed-estado').value = o.estado;
+    $('ed-tecnica').value = o.tecnica || ''; $('ed-alto').value = o.altoCm || ''; $('ed-ancho').value = o.anchoCm || ''; $('ed-fondo').value = o.fondoCm || '';
+    $('ed-precio').value = o.precio || ''; $('ed-destacada').checked = !!o.destacada;
+    limpiar('ed-avisos'); $('b-ed-guardar').disabled = false; $('b-ed-guardar').textContent = 'Guardar cambios';
+    pintarFotosEdicion(); ir('editar');
+  }
+  function ordenFotos() { return ed.fotos.filter(function (f) { return !f.sala; }).concat(ed.fotos.filter(function (f) { return f.sala; })); }
+  function pintarFotosEdicion() {
+    var cont = $('ed-fotos'); cont.textContent = ''; ed.fotos = ordenFotos();
+    ed.fotos.forEach(function (f, i) {
+      var fig = document.createElement('figure'), im = document.createElement('img'), cap = document.createElement('figcaption'), acc = document.createElement('div');
+      im.alt = ''; im.src = f.id ? foto(f.id, 300) : f.lienzo.toDataURL('image/jpeg', 0.6);
+      cap.textContent = f.sala ? 'En sala' : (i === 0 ? 'Portada' : (f.id ? '' : 'Nueva'));
+      acc.className = 'acc';
+      var sube = document.createElement('button'); sube.type = 'button'; sube.textContent = 'Portada'; sube.disabled = i === 0 || f.sala; sube.setAttribute('aria-label', 'Poner como portada la foto ' + (i + 1));
+      sube.addEventListener('click', function () { ed.fotos.splice(i, 1); ed.fotos.unshift(f); pintarFotosEdicion(); });
+      var quita = document.createElement('button'); quita.type = 'button'; quita.textContent = 'Quitar'; quita.disabled = ed.fotos.length === 1; quita.setAttribute('aria-label', 'Quitar la foto ' + (i + 1));
+      quita.addEventListener('click', function () { ed.fotos.splice(i, 1); pintarFotosEdicion(); });
+      acc.appendChild(sube); acc.appendChild(quita); fig.appendChild(im); fig.appendChild(cap); fig.appendChild(acc); cont.appendChild(fig);
+    });
+  }
+  $('ed-archivos').addEventListener('change', function () {
+    var fs = Array.prototype.slice.call(this.files || [], 0, Math.max(0, 6 - ed.fotos.length)); this.value = '';
+    limpiar('ed-avisos');
+    if (!fs.length) { if (ed.fotos.length >= 6) aviso('ed-avisos', 'Una obra puede tener como mucho 6 fotos. Quita alguna antes de añadir otra.'); return; }
+    Promise.all(fs.map(function (f) {
+      var url = URL.createObjectURL(f);
+      return cargarImagen(url).then(function (img) {
+        var k = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = I.lienzo(img.naturalWidth * k, img.naturalHeight * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url); return { lienzo: c, sala: false };
+      });
+    })).then(function (ls) { ed.fotos = ed.fotos.concat(ls); pintarFotosEdicion(); })
+      .catch(function () { aviso('ed-avisos', 'No se pudo abrir alguna de las fotos.', 'grave'); });
+  });
+  $('b-ed-atras').addEventListener('click', cargarObras);
+  $('b-ed-guardar').addEventListener('click', function () {
+    limpiar('ed-avisos');
+    var titulo = $('ed-titulo').value.trim(), artista = $('ed-artista').value.trim(), alto = parseFloat($('ed-alto').value) || 0;
+    if (!titulo || !artista) { aviso('ed-avisos', 'Escribe el título y el artista.', 'grave'); return; }
+    if (!alto) { aviso('ed-avisos', 'Escribe al menos el alto en centímetros.', 'grave'); return; }
+    if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
+    var fotos = ordenFotos(), boton = $('b-ed-guardar');
+    boton.disabled = true; boton.textContent = 'Guardando…';
+    llamar({ accion: 'cambiarObra', token: E.token, id: ed.id, titulo: titulo, artista: artista, tipoObra: $('ed-tipo').value, estado: $('ed-estado').value,
+             tecnica: $('ed-tecnica').value, altoCm: alto, anchoCm: parseFloat($('ed-ancho').value) || 0, fondoCm: parseFloat($('ed-fondo').value) || 0,
+             precio: parseFloat($('ed-precio').value) || 0, destacada: $('ed-destacada').checked,
+             imagenes: fotos.map(function (f) { return f.id ? { id: f.id } : { datos: jpeg(f.lienzo, 1800) }; }),
+             enSala: fotos.filter(function (f) { return f.sala; }).length })
+      .then(function (r) {
+        if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
+        cargarObras(); aviso('obras-avisos', 'Guardado: ' + titulo + '. En la web se ve en un par de minutos.', 'bien');
+      })
+      .catch(function (e) {
+        if (e.sesion) { guardarToken(null); ir('entrar'); return; }
+        boton.disabled = false; boton.textContent = 'Guardar cambios';
+        aviso('ed-avisos', e.message === 'Failed to fetch' ? 'No hay conexión con el servidor. Inténtalo de nuevo.' : e.message, 'grave');
+      });
+  });
+
   $('b-ver-obras').addEventListener('click', cargarObras);
   $('b-obras-nueva').addEventListener('click', function () { ir('foto'); });
 

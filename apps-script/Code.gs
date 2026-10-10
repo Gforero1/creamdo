@@ -16,7 +16,7 @@ var MAX_IMAGEN_B64 = 7 * 1024 * 1024;
 var SHOPIFY_VERSION = '2026-07';
 var TIPOS_OBRA = ['Pintura', 'Retablo', 'Escultura', 'Arte sacro', 'Objeto'];
 var ESTADOS = ['Borrador', 'Publicada', 'Vendida', 'Oculta'];
-var COLUMNAS = ['ID', 'Creada', 'Estado', 'Título', 'Artista', 'Tipo', 'Técnica', 'Ancho cm', 'Alto cm', 'Fondo cm', 'Precio USD', 'Imágenes', 'Actualizada', 'En sala'];
+var COLUMNAS = ['ID', 'Creada', 'Estado', 'Título', 'Artista', 'Tipo', 'Técnica', 'Ancho cm', 'Alto cm', 'Fondo cm', 'Precio USD', 'Imágenes', 'Actualizada', 'En sala', 'Destacada'];
 
 // El texto que recibe Gemini se decide aquí, no en la web: así la clave no sirve
 // para pedirle cualquier otra cosa aunque alguien robe una sesión.
@@ -144,7 +144,7 @@ function filaAObra_(f) {
   return { id: String(f[0]), creada: f[1] instanceof Date ? f[1].toISOString() : String(f[1]), estado: String(f[2]), titulo: String(f[3]), artista: String(f[4]),
     tipo: String(f[5]), tecnica: String(f[6]), anchoCm: Number(f[7]) || 0, altoCm: Number(f[8]) || 0, fondoCm: Number(f[9]) || 0,
     precio: Number(f[10]) || 0, imagenes: String(f[11] || '').split(',').filter(function (x) { return /^[A-Za-z0-9_-]{10,}$/.test(x); }),
-    enSala: Math.max(0, Math.min(3, Number(f[13]) || 0)) };
+    enSala: Math.max(0, Math.min(3, Number(f[13]) || 0)), destacada: String(f[14] || '') === 'Sí' };
 }
 
 function leerObras_() {
@@ -185,7 +185,7 @@ function guardarObra_(d) {
     return Drive.Files.create({ name: base + '-' + (n + 1) + '.jpg', parents: [carpeta] }, blob, { fields: 'id' }).id;
   });
   var cerrojo = LockService.getScriptLock(); cerrojo.waitLock(15000);
-  hojaObras_().appendRow([id, new Date(), estado, hoja_(titulo), hoja_(artista), tipo, hoja_(tecnica), ancho || '', alto, fondo || '', precio || '', ids.join(','), new Date(), Math.max(0, Math.min(3, Number(d.enSala) || 0))]);
+  hojaObras_().appendRow([id, new Date(), estado, hoja_(titulo), hoja_(artista), tipo, hoja_(tecnica), ancho || '', alto, fondo || '', precio || '', ids.join(','), new Date(), Math.max(0, Math.min(3, Number(d.enSala) || 0)), '']);
   cerrojo.releaseLock();
   CacheService.getScriptCache().remove('catalogo');
   return { ok: true, id: id, estado: estado, titulo: titulo };
@@ -196,21 +196,66 @@ function listarObras_(d) {
   return { ok: true, obras: leerObras_().reverse() };
 }
 
+// Cambia lo que venga en la petición y deja lo demás como estaba.
 function cambiarObra_(d) {
   if (!sesionValida_(d.token)) return { ok: false, error: 'sesion' };
-  var h = hojaObras_(), v = h.getDataRange().getValues(), fila = -1;
-  for (var i = 1; i < v.length; i++) if (String(v[i][0]) === String(d.id)) { fila = i + 1; break; }
-  if (fila < 0) return { ok: false, error: 'No se encontró la obra' };
-  if (d.estado !== undefined) {
-    if (ESTADOS.indexOf(d.estado) < 0) return { ok: false, error: 'Estado no válido' };
-    h.getRange(fila, 3).setValue(d.estado);
-  }
-  if (d.precio !== undefined) h.getRange(fila, 11).setValue(Math.max(0, Number(d.precio) || 0) || '');
-  if (d.titulo !== undefined && limpioTexto_(d.titulo, 80)) h.getRange(fila, 4).setValue(hoja_(limpioTexto_(d.titulo, 80)));
-  if (d.artista !== undefined && limpioTexto_(d.artista, 80)) h.getRange(fila, 5).setValue(hoja_(limpioTexto_(d.artista, 80)));
-  h.getRange(fila, 13).setValue(new Date());
-  CacheService.getScriptCache().remove('catalogo');
-  return { ok: true };
+  var cerrojo = LockService.getScriptLock(); cerrojo.waitLock(15000);
+  try {
+    var h = hojaObras_(), v = h.getDataRange().getValues(), fila = -1;
+    for (var i = 1; i < v.length; i++) if (String(v[i][0]) === String(d.id)) { fila = i + 1; break; }
+    if (fila < 0) return { ok: false, error: 'No se encontró la obra' };
+    var actual = filaAObra_(v[fila - 1]), pon = function (col, valor) { h.getRange(fila, col).setValue(valor); };
+
+    // primero se valida todo; solo después se escribe
+    if (d.estado !== undefined && ESTADOS.indexOf(d.estado) < 0) return { ok: false, error: 'Estado no válido' };
+    if (d.tipoObra !== undefined && TIPOS_OBRA.indexOf(d.tipoObra) < 0) return { ok: false, error: 'Tipo no válido' };
+    if (d.titulo !== undefined && !limpioTexto_(d.titulo, 80)) return { ok: false, error: 'Falta el título' };
+    if (d.artista !== undefined && !limpioTexto_(d.artista, 80)) return { ok: false, error: 'Falta el artista' };
+    if (d.altoCm !== undefined && !medida_(d.altoCm)) return { ok: false, error: 'Falta al menos el alto de la obra' };
+    var nuevas = null, quitadas = [];
+    if (d.imagenes !== undefined) {
+      // Cada imagen es una que la obra ya tenía ({id}) o una foto nueva ({datos}). No se admiten ids ajenos.
+      if (!Array.isArray(d.imagenes) || !d.imagenes.length || d.imagenes.length > 6) return { ok: false, error: 'La obra necesita entre 1 y 6 imágenes' };
+      for (var k = 0; k < d.imagenes.length; k++) {
+        var im = d.imagenes[k] || {};
+        if (im.id !== undefined) { if (actual.imagenes.indexOf(String(im.id)) < 0) return { ok: false, error: 'Imagen no válida' }; }
+        else { var dato = String(im.datos || ''); if (!/^[A-Za-z0-9+/=]+$/.test(dato) || dato.length < 1000 || dato.length > MAX_IMAGEN_B64) return { ok: false, error: 'Imagen no válida' }; }
+      }
+      var base = (limpioTexto_(d.titulo !== undefined ? d.titulo : actual.titulo, 80) + '-' + actual.id).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'obra';
+      var carpeta = carpetaFotos_();
+      nuevas = d.imagenes.map(function (im, n) {
+        if (im.id !== undefined) return String(im.id);
+        var blob = Utilities.newBlob(Utilities.base64Decode(im.datos), 'image/jpeg', base + '-' + Date.now().toString(36) + n + '.jpg');
+        return Drive.Files.create({ name: base + '-' + Date.now().toString(36) + n + '.jpg', parents: [carpeta] }, blob, { fields: 'id' }).id;
+      });
+      quitadas = actual.imagenes.filter(function (x) { return nuevas.indexOf(x) < 0; });
+    }
+
+    if (d.estado !== undefined) pon(3, d.estado);
+    if (d.titulo !== undefined) pon(4, hoja_(limpioTexto_(d.titulo, 80)));
+    if (d.artista !== undefined) pon(5, hoja_(limpioTexto_(d.artista, 80)));
+    if (d.tipoObra !== undefined) pon(6, d.tipoObra);
+    if (d.tecnica !== undefined) pon(7, hoja_(limpioTexto_(d.tecnica, 80)));
+    if (d.anchoCm !== undefined) pon(8, medida_(d.anchoCm) || '');
+    if (d.altoCm !== undefined) pon(9, medida_(d.altoCm));
+    if (d.fondoCm !== undefined) pon(10, medida_(d.fondoCm) || '');
+    if (d.precio !== undefined) pon(11, Math.max(0, Number(d.precio) || 0) || '');
+    if (nuevas) {
+      pon(12, nuevas.join(','));
+      pon(14, Math.max(0, Math.min(3, Math.min(nuevas.length - 1, Number(d.enSala) || 0))));
+      // Las fotos quitadas van a la papelera de Drive (se pueden recuperar 30 días), no se borran del todo.
+      quitadas.forEach(function (id) { try { Drive.Files.update({ trashed: true }, id); } catch (err) { console.warn('No se pudo mover a la papelera ' + id); } });
+    }
+    if (d.destacada !== undefined) {
+      h.getRange(1, 15).setValue('Destacada');
+      // solo una obra destacada a la vez
+      if (d.destacada) for (var j = 1; j < v.length; j++) if (j + 1 !== fila && String(v[j][14] || '') === 'Sí') h.getRange(j + 1, 15).setValue('');
+      pon(15, d.destacada ? 'Sí' : '');
+    }
+    pon(13, new Date());
+    CacheService.getScriptCache().remove('catalogo');
+    return { ok: true };
+  } finally { cerrojo.releaseLock(); }
 }
 
 function medida_(v) { var n = Number(v); return (n >= 1 && n <= 600) ? Math.round(n * 10) / 10 : 0; }

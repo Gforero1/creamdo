@@ -4,29 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>Creamdo · Obra en sala</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Creamdo · Admin</title>
+<link rel="icon" type="image/svg+xml" href="../marca/favicon.svg?v=2">
+<link rel="preload" href="../marca/archivo.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* Misma identidad que la web: blanco, negro y las tres rayas del logo. Una sola familia, Archivo. */
+@font-face{font-family:Archivo;src:url(../marca/archivo.woff2) format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:swap}
 :root{
-  --papel:#F3EEE4; --papel2:#EAE3D5; --tinta:#201A14; --gris:#6E6457; --linea:#CFC4B1;
-  --terracota:#A9472B; --terracota2:#8C3820; --aviso:#7A5A12; --avisofondo:#F2E3B8; --bien:#2F5D3A;
-  --titulo:"Cormorant Garamond", "Iowan Old Style", Georgia, serif;
-  --texto:"Instrument Sans", system-ui, sans-serif;
+  --papel:#FFFFFF; --papel2:#F4F4F1; --tinta:#0A0A0B; --gris:#626266; --linea:#E2E2DF;
+  --cian:#009ED8; --naranja:#F26122; --magenta:#EC1163;
+  --terracota:#0A0A0B; --terracota2:#2A2A2D; --aviso:#7A4A00; --avisofondo:#FDEBD9; --bien:#0B5E7E;
+  --titulo:Archivo, "Helvetica Neue", Arial, sans-serif;
+  --texto:Archivo, "Helvetica Neue", Arial, sans-serif;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--papel);color:var(--tinta);font:16px/1.5 var(--texto)}
 main{max-width:620px;margin:0 auto;padding:20px 18px 120px}
-header.marca{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--tinta);padding-bottom:10px;margin-bottom:26px}
-header.marca b{font:600 22px/1 var(--titulo);letter-spacing:.14em}
+header.marca{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid var(--tinta);padding-bottom:10px;margin-bottom:26px}
+header.marca a{display:flex;align-items:center;gap:11px;text-decoration:none;color:inherit}
+header.marca img{height:36px;width:auto;display:block}
+header.marca b{font-weight:900;font-stretch:125%;font-size:15px;letter-spacing:.28em;line-height:1;display:block}
+header.marca i{font-style:normal;font-weight:300;font-size:11px;letter-spacing:.5em;display:block;margin-top:4px}
 header.marca span{font-size:13px;color:var(--gris)}
-.paso{font:500 13px/1 var(--texto);letter-spacing:.12em;text-transform:uppercase;color:var(--terracota);margin:0 0 8px}
-h1{font:500 38px/1.05 var(--titulo);margin:0 0 14px}
-h1 em,h2 em{font-style:italic;font-weight:500}
-h2{font:500 28px/1.1 var(--titulo);margin:34px 0 10px;padding-top:22px;border-top:1px solid var(--tinta)}
-select{width:100%;font:16px var(--texto);color:var(--tinta);background:#FBF8F2;border:1px solid var(--tinta);border-radius:2px;padding:13px 12px;margin-bottom:16px}
+.paso{font:650 12px/1 var(--texto);letter-spacing:.2em;text-transform:uppercase;color:var(--magenta);margin:0 0 10px}
+h1{font:300 32px/1.1 var(--titulo);letter-spacing:-.01em;margin:0 0 16px}
+h1 em,h2 em{font-style:normal;font-weight:650}
+h2{font:300 24px/1.15 var(--titulo);margin:34px 0 10px;padding-top:22px;border-top:1px solid var(--tinta)}
+select{width:100%;font:16px var(--texto);color:var(--tinta);background:#fff;border:1px solid var(--tinta);border-radius:0;padding:13px 12px;margin-bottom:16px}
 .aviso a{color:inherit;font-weight:600}
 p{margin:0 0 14px}
 .nota{color:var(--gris);font-size:14.5px}
@@ -34,12 +39,13 @@ section{display:none}
 section.visible{display:block}
 ol.consejos{list-style:none;padding:0;margin:0 0 22px;border-top:1px solid var(--linea)}
 ol.consejos li{display:grid;grid-template-columns:44px 1fr;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--linea)}
-ol.consejos li i{font:italic 500 26px/1 var(--titulo);color:var(--terracota)}
+ol.consejos li i{font:900 22px/1 var(--titulo);font-stretch:125%;font-style:normal}
+ol.consejos li:nth-child(1) i{color:var(--cian)}ol.consejos li:nth-child(2) i{color:var(--naranja)}ol.consejos li:nth-child(3) i{color:var(--magenta)}
 label{display:block;font-size:13.5px;font-weight:500;margin:0 0 6px}
-input[type=text],input[type=password],input[type=number]{width:100%;font:16px var(--texto);color:var(--tinta);background:#FBF8F2;border:1px solid var(--tinta);border-radius:2px;padding:13px 12px;margin-bottom:16px}
-input:focus-visible,button:focus-visible{outline:2px solid var(--terracota);outline-offset:2px}
+input[type=text],input[type=password],input[type=number]{width:100%;font:16px var(--texto);color:var(--tinta);background:#fff;border:1px solid var(--tinta);border-radius:0;padding:13px 12px;margin-bottom:16px}
+input:focus-visible,button:focus-visible,select:focus-visible,.boton:focus-visible{outline:3px solid var(--cian);outline-offset:2px}
 .dos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-button,.boton{appearance:none;display:block;width:100%;text-align:center;font:600 16px/1 var(--texto);padding:17px 16px;border-radius:2px;border:1px solid var(--tinta);background:var(--tinta);color:var(--papel);cursor:pointer;margin:0 0 10px}
+button,.boton{appearance:none;display:block;width:100%;text-align:center;font:600 16px/1 var(--texto);padding:17px 16px;border-radius:0;border:1px solid var(--tinta);background:var(--tinta);color:var(--papel);cursor:pointer;margin:0 0 10px}
 button.otro,.boton.otro{background:transparent;color:var(--tinta)}
 button.acento,.boton.acento{background:var(--terracota);border-color:var(--terracota)}
 button.acento:active{background:var(--terracota2)}
@@ -47,7 +53,7 @@ button:disabled{opacity:.45;cursor:default}
 button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underline;text-underline-offset:3px;padding:12px 0;font-weight:500;width:auto}
 .aviso{background:var(--avisofondo);color:var(--aviso);border-left:3px solid var(--aviso);padding:12px 14px;font-size:14.5px;margin:0 0 16px}
 .aviso.grave{background:#F3D9D0;color:#7A2414;border-color:#7A2414}
-.aviso.bien{background:#DDE7DA;color:var(--bien);border-color:var(--bien)}
+.aviso.bien{background:#E3F3FA;color:var(--bien);border-color:var(--bien)}
 .lienzo{position:relative;margin:0 -18px 16px;background:#191512;touch-action:none}
 .lienzo canvas{display:block;width:100%;height:auto}
 .marco{margin:0 0 16px;background:var(--papel2);padding:10px}
@@ -55,25 +61,35 @@ button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underl
 .salas{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 18px}
 .salas button{padding:0;background:none;border:1px solid var(--linea);color:var(--tinta);text-align:left;margin:0}
 .salas button img{display:block;width:100%;aspect-ratio:2/3;object-fit:cover}
-.salas button span{display:block;padding:9px 10px 2px;font:500 19px/1.1 var(--titulo)}
+.salas button span{display:block;padding:9px 10px 2px;font:650 16px/1.15 var(--titulo)}
 .salas button small{display:block;padding:0 10px 10px;font-size:12.5px;color:var(--gris);font-weight:400;line-height:1.3}
-.salas button[aria-pressed=true]{border:2px solid var(--terracota)}
+.salas button[aria-pressed=true]{border:3px solid var(--magenta)}
 .salas button:disabled img{filter:grayscale(1)}
 .deslizador{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin-bottom:16px;font-size:13.5px}
 .deslizador input{width:100%;accent-color:var(--terracota)}
 .casilla{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:400;margin-bottom:14px}
 .casilla input{width:20px;height:20px;accent-color:var(--terracota)}
-.espera{font:italic 500 24px/1.2 var(--titulo);padding:26px 0;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);margin-bottom:16px}
+.espera{font:300 22px/1.2 var(--titulo);padding:26px 0;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);margin-bottom:16px}
 .espera small{display:block;font:400 14px/1.4 var(--texto);color:var(--gris);margin-top:6px}
 .tres{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
 .tiras{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 18px}
 .tiras img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--papel2)}
 .obra{display:grid;grid-template-columns:84px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--linea)}
 .obra img{width:84px;height:84px;object-fit:cover;background:var(--papel2)}
-.obra b{font:500 20px/1.15 var(--titulo);display:block}
+.obra b{font:650 17px/1.2 var(--titulo);display:block}
 .obra small{color:var(--gris);display:block;margin-bottom:8px}
 .obra .dos{gap:8px}
 .obra select,.obra input{padding:9px 8px;margin-bottom:0;font-size:15px}
+.obra .editar{width:auto;padding:9px 14px;font-size:14px;margin:8px 0 0;background:none;color:var(--tinta)}
+.fotos-ed{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
+.fotos-ed figure{margin:0;border:1px solid var(--linea);background:var(--papel2)}
+.fotos-ed img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.fotos-ed figcaption{font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;padding:6px 6px 0;color:var(--gris);min-height:22px}
+.fotos-ed .acc{display:flex;gap:4px;padding:6px}
+.fotos-ed button{flex:1;width:auto;padding:8px 2px;font-size:12.5px;font-weight:600;margin:0;background:#fff;color:var(--tinta);border-color:var(--linea)}
+.fotos-ed button:disabled{opacity:.3}
+.rayas{display:inline-flex;gap:4px;transform:skewX(22deg)}
+.rayas i{display:block;width:6px;height:20px}.rayas i:nth-child(1){background:var(--cian)}.rayas i:nth-child(2){background:var(--naranja)}.rayas i:nth-child(3){background:var(--magenta)}
 .oculto{display:none!important}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
 footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padding-top:12px;margin-top:34px}
@@ -81,7 +97,7 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
 </head>
 <body>
 <main>
-  <header class="marca"><b>CREAMDO</b><span><button class="enlace oculto" id="b-ver-obras" style="padding:0;font-size:13px">Obras</button> <span id="cabecera">Obra en sala</span></span></header>
+  <header class="marca"><a href="../" aria-label="Ver la web"><img src="../marca/monograma.png" alt="" width="480" height="303"><span><b>CREAMDO</b><i>ADMIN</i></span></a><span><button class="enlace oculto" id="b-ver-obras" style="padding:0;font-size:13px">Obras</button> <span id="cabecera">Obra en sala</span></span></header>
 
   <section id="p-entrar">
     <p class="paso">Acceso</p>
@@ -140,6 +156,33 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     <div id="obj-avisos"></div>
     <button id="b-obj-guardar" class="acento">Guardar en el catálogo</button>
     <button id="b-obj-atras" class="enlace">Volver</button>
+  </section>
+
+  <section id="p-editar">
+    <p class="paso">Catálogo</p>
+    <h1>Editar <em>la obra</em></h1>
+    <label>Fotos</label>
+    <div class="fotos-ed" id="ed-fotos"></div>
+    <label class="boton otro" for="ed-archivos">Añadir fotos</label>
+    <input type="file" id="ed-archivos" accept="image/*" multiple>
+    <p class="nota">La primera foto es la portada. Las fotos que quites van a la papelera de Drive, donde se pueden recuperar durante 30 días.</p>
+    <label for="ed-titulo">Título</label><input type="text" id="ed-titulo" maxlength="80">
+    <label for="ed-artista">Artista</label><input type="text" id="ed-artista" maxlength="80">
+    <div class="dos">
+      <div><label for="ed-tipo">Tipo</label><select id="ed-tipo"><option>Pintura</option><option>Retablo</option><option>Escultura</option><option>Arte sacro</option><option>Objeto</option></select></div>
+      <div><label for="ed-estado">Estado</label><select id="ed-estado"><option>Borrador</option><option>Publicada</option><option>Vendida</option><option>Oculta</option></select></div>
+    </div>
+    <label for="ed-tecnica">Material o técnica</label><input type="text" id="ed-tecnica" maxlength="80">
+    <div class="tres">
+      <div><label for="ed-alto">Alto (cm)</label><input type="number" id="ed-alto" inputmode="decimal" min="1" max="600" step="0.5"></div>
+      <div><label for="ed-ancho">Ancho (cm)</label><input type="number" id="ed-ancho" inputmode="decimal" min="1" max="600" step="0.5"></div>
+      <div><label for="ed-fondo">Fondo (cm)</label><input type="number" id="ed-fondo" inputmode="decimal" min="1" max="600" step="0.5"></div>
+    </div>
+    <label for="ed-precio">Precio en $ (vacío: a consultar)</label><input type="number" id="ed-precio" inputmode="decimal" min="0" step="1">
+    <label class="casilla"><input type="checkbox" id="ed-destacada"> Ponerla en la portada de la web</label>
+    <div id="ed-avisos"></div>
+    <button id="b-ed-guardar" class="acento">Guardar cambios</button>
+    <button id="b-ed-atras" class="enlace">Volver sin guardar</button>
   </section>
 
   <section id="p-obras">
@@ -223,9 +266,9 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
 
   <footer>Uso interno de Creamdo Art. <button class="enlace oculto" id="b-salir" style="padding:0;font-size:12.5px">Cerrar sesión</button></footer>
 </main>
-<script src="../config.js?v=6"></script>
-<script src="salas.js?v=6"></script>
-<script src="imagen.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="../config.js?v=7"></script>
+<script src="salas.js?v=7"></script>
+<script src="imagen.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>

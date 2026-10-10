@@ -20,6 +20,14 @@ Sale del logo de la marca, no de una plantilla:
 - **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.
 - **Textos:** los de la galería (bio de Instagram y tienda anterior) y datos reales de cada obra.
 
+## Admin: editar y destacar
+
+En "Obras", cada obra tiene "Editar": título, artista, tipo, estado, técnica, medidas, precio y fotos (poner otra de portada, quitar, añadir hasta 6). Las fotos quitadas van a la papelera de Drive, no se borran. El backend solo acepta ids de fotos que ya eran de esa obra.
+
+La casilla "Ponerla en la portada de la web" marca la obra destacada (una a la vez, columna "Destacada" de la hoja). Si no hay ninguna marcada, la portada enseña una obra disponible distinta en cada visita.
+
+El admin usa la misma identidad que la web: Archivo, blanco y negro, y los tres colores del logo como acento.
+
 ## Panel: esculturas y objetos
 
 Una escultura no se puede enderezar con cuatro esquinas, así que va por otro camino. La regla es la misma: **la pieza nunca la dibuja la IA**.

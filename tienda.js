@@ -63,6 +63,22 @@
     lista.forEach(function (o, i) { cols[i % n].appendChild(tarjeta(o)); });
     return el('div', { clase: 'muro' }, cols);
   }
+  // La obra de la portada: la que la galería marcó como destacada en el admin. Si no hay ninguna,
+  // una disponible distinta en cada visita (se mantiene mientras dure la visita).
+  var azar = null;
+  function destacada() {
+    var libres = obras.filter(function (o) { return o.estado !== 'Vendida' && o.imagenes.length; });
+    var marcada = libres.filter(function (o) { return o.destacada; })[0];
+    if (marcada || !libres.length) return marcada || null;
+    if (azar === null) {
+      try { azar = sessionStorage.getItem('creamdo-portada'); } catch (e) {}
+      if (!azar || !libres.some(function (o) { return o.id === azar; })) {
+        azar = libres[Math.floor(Math.random() * libres.length)].id;
+        try { sessionStorage.setItem('creamdo-portada', azar); } catch (e) {}
+      }
+    }
+    return libres.filter(function (o) { return o.id === azar; })[0] || libres[0];
+  }
   function columnas() { return window.innerWidth >= 1000 ? 3 : window.innerWidth >= 620 ? 2 : 1; }
   function banda() {
     function item(color, nombre, texto) {
@@ -85,7 +101,7 @@
     titulo('');
     var tipos = []; obras.forEach(function (o) { if (tipos.indexOf(o.tipo) < 0) tipos.push(o.tipo); });
     var lista = tipo ? obras.filter(function (o) { return slug(o.tipo) === tipo; }) : obras;
-    var disponible = obras.filter(function (o) { return o.estado !== 'Vendida' && o.imagenes.length; })[0];
+    var disponible = destacada();
     var portada = tipo ? null : el('section', { clase: 'portada' }, [
       el('div', {}, [
         el('h1', { texto: 'Galería de Adriana Moncayo en Lechería, Venezuela.' }),
@@ -94,7 +110,7 @@
       ]),
       disponible ? el('a', { clase: 'destacada', href: '#/obra/' + disponible.id, 'data-obra': disponible.id }, [
         el('span', { clase: 'marco' }, [el('img', { src: foto(disponible.imagenes[0], 1000), alt: disponible.titulo + ', de ' + disponible.artista })]),
-        el('p', {}, [el('b', { texto: disponible.titulo }), ' · ' + disponible.artista])
+        el('p', {}, [el('span', { clase: 'etiqueta', texto: disponible.destacada ? 'Obra destacada' : 'En la galería ahora' }), el('b', { texto: disponible.titulo }), ' · ' + disponible.artista])
       ]) : null
     ]);
     var filtros = tipos.length > 1 ? el('div', { clase: 'filtros' }, [el('a', { href: '#/', 'aria-current': String(!tipo), texto: 'Todo' })].concat(tipos.map(function (t) {
