@@ -449,18 +449,47 @@ function doPost(e) {
   try { d = JSON.parse(e.postData.contents); } catch (err) { return json_({ ok: false, error: 'Petición no válida' }); }
   try {
     if (d.accion === 'entrar') return json_(entrar_(d));
-    if (d.accion === 'integrar') return json_(integrar_(d));
-    if (d.accion === 'publicar') return json_(publicar_(d));
-    if (d.accion === 'guardarObra') return json_(guardarObra_(d));
-    if (d.accion === 'listarObras') return json_(listarObras_(d));
-    if (d.accion === 'cambiarObra') return json_(cambiarObra_(d));
-    return json_({ ok: false, error: 'Acción desconocida' });
+    // A veces Google ejecuta la petición pero no entrega la respuesta. El admin repite entonces la misma
+    // petición con el mismo "pid": si ya se hizo, se devuelve lo guardado y no se repite el trabajo
+    // (ni se paga otra imagen ni se duplica una obra). Solo con sesión válida.
+    var pid = /^[a-z0-9]{16,48}$/.test(String(d.pid || '')) && sesionValida_(d.token) ? String(d.pid) : null;
+    if (pid) { var previo = recordado_(pid); if (previo) return ContentService.createTextOutput(previo).setMimeType(ContentService.MimeType.JSON); }
+    var r;
+    if (d.accion === 'integrar') r = integrar_(d);
+    else if (d.accion === 'publicar') r = publicar_(d);
+    else if (d.accion === 'guardarObra') r = guardarObra_(d);
+    else if (d.accion === 'listarObras') r = listarObras_(d);
+    else if (d.accion === 'cambiarObra') r = cambiarObra_(d);
+    else r = { ok: false, error: 'Acción desconocida' };
+    var texto = JSON.stringify(r);
+    if (pid && r && r.ok) recordar_(pid, texto);
+    return ContentService.createTextOutput(texto).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     console.error(err);
     return json_({ ok: false, error: 'Error interno' });
   }
 }
-
+// Respuestas recordadas 10 minutos, troceadas porque la caché admite 100 KB por entrada.
+var TROZO = 90000;
+function recordar_(pid, texto) {
+  try {
+    var cache = CacheService.getScriptCache(), n = Math.ceil(texto.length / TROZO), lote = {};
+    if (n > 120) return;
+    for (var i = 0; i < n; i++) lote['r_' + pid + '_' + i] = texto.substr(i * TROZO, TROZO);
+    cache.putAll(lote, 600);
+    cache.put('r_' + pid + '_n', String(n), 600);
+  } catch (err) { console.warn('No se pudo recordar la respuesta: ' + err); }
+}
+function recordado_(pid) {
+  try {
+    var cache = CacheService.getScriptCache(), n = Number(cache.get('r_' + pid + '_n') || 0);
+    if (!n) return null;
+    var llaves = []; for (var i = 0; i < n; i++) llaves.push('r_' + pid + '_' + i);
+    var partes = cache.getAll(llaves), texto = '';
+    for (var j = 0; j < n; j++) { if (typeof partes[llaves[j]] !== 'string') return null; texto += partes[llaves[j]]; }
+    return texto;
+  } catch (err) { return null; }
+}
 function entrar_(d) {
   var p = PropertiesService.getScriptProperties(), cache = CacheService.getScriptCache();
   var huella = p.getProperty('PANEL_HUELLA'), sal = p.getProperty('PANEL_SAL');

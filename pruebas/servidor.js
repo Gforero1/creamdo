@@ -3,10 +3,13 @@ const http=require('http'),fs=require('fs'),path=require('path');
 const raiz=path.join(__dirname,'..');const tipos={'.html':'text/html; charset=utf-8','.js':'text/javascript','.jpg':'image/jpeg','.png':'image/png','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.svg':'image/svg+xml'};
 let escena='gemini-A.png';
 http.createServer((q,r)=>{
-  if(q.url==='/reiniciar'){globalThis.pedidas=[];globalThis.obras=[];globalThis.cambios=[];return r.end('ok');}
-  if(q.url==='/pedidas'){r.setHeader('Content-Type','application/json');return r.end(JSON.stringify({pedidas:globalThis.pedidas||[],obras:globalThis.obras||[],cambios:globalThis.cambios||[]}));}
+  if(q.url==='/reiniciar'){globalThis.pedidas=[];globalThis.obras=[];globalThis.cambios=[];globalThis.perdidas=0;globalThis.vistos={};return r.end('ok');}
+  if(q.url==='/pedidas'){r.setHeader('Content-Type','application/json');return r.end(JSON.stringify({pedidas:globalThis.pedidas||[],obras:globalThis.obras||[],cambios:globalThis.cambios||[],perdidas:globalThis.perdidas||0}));}
   if(q.url.startsWith('/api')){let b='';q.on('data',d=>b+=d);q.on('end',()=>{let j={};try{j=JSON.parse(b)}catch(e){}
     r.setHeader('Content-Type','application/json');r.setHeader('Access-Control-Allow-Origin','*');
+    globalThis.vistos=globalThis.vistos||{};if(j.pid){globalThis.vistos[j.pid]=(globalThis.vistos[j.pid]||0)+1;}
+    // simula la respuesta perdida de Google: la primera vez de cada petición marcada con 'pierde' llega la portada del servicio
+    if(j.pid&&/pierde/i.test(j.titulo||'')&&globalThis.vistos[j.pid]===1&&j.accion==='integrar'){globalThis.perdidas=(globalThis.perdidas||0)+1;return r.end(JSON.stringify({ok:true,servicio:'creamdo-admin'}));}
     if(j.accion==='entrar'&&j.clave==='html'){r.setHeader('Content-Type','text/html');return r.end('<html><body>Error</body></html>');}
     if(j.accion==='entrar'&&j.clave==='portada')return r.end(JSON.stringify({ok:true,servicio:'creamdo-admin'}));
     if(j.accion==='entrar')return r.end(JSON.stringify(j.clave==='prueba123'?{ok:true,token:(globalThis.tk=(Date.now()+3600e3)+'.abc')}:{ok:false,error:'Clave incorrecta'}));

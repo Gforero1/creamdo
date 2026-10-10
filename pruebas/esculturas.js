@@ -16,11 +16,11 @@ const estado=async()=>(await (await fetch('http://localhost:8765/pedidas')).json
 await p.setInputFiles('#archivos-obj',['esc-caja.jpg']);await p.waitForSelector('#p-objeto.visible');
 await p.fill('#obj-titulo','Caja pintada');await p.fill('#obj-artista','Prueba');
 await p.click('#b-ambientar');t('sin alto no se ambienta',(await texto('amb-avisos')).includes('alto'));
-await p.fill('#obj-alto','40');await p.selectOption('#obj-mueble','aparador');await p.click('#b-ambientar');
+await p.fill('#obj-alto','40');await p.click('[data-mueble=aparador]');await p.click('#b-ambientar');
 await p.waitForSelector('#amb-marco:not(.oculto)',{timeout:60000});
 console.log('   caja',await veri());
 t('caja: queda en sala',(await texto('amb-nota')).includes('Imagen referencial'));
-let e=await estado();t('caja: dos peticiones, con mueble y alto',e.pedidas.length===2&&e.pedidas.some(x=>x.tipo==='mascara')&&e.pedidas.some(x=>x.tipo==='entorno'&&x.mueble==='aparador'&&x.altoCm===40));
+let e=await estado();t('caja: dos peticiones, con mueble y alto',e.pedidas.length===2&&e.pedidas[0].tipo==='mascara'&&e.pedidas.some(x=>x.tipo==='mascara')&&e.pedidas.some(x=>x.tipo==='entorno'&&x.mueble==='aparador'&&x.altoCm===40));
 // la pieza del resultado es la de la foto: se compara el centro de la pieza con el original
 const dif=await p.evaluate(async()=>{const I=window.Imagen,E=__panel;const fin=document.getElementById('c-amb');
   const img=await new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src='/pruebas/esc-caja.jpg'});
@@ -40,7 +40,7 @@ e=await estado();let o=e.obras[e.obras.length-1];t('caja: se guardan foto real y
 // 2. pieza que la IA redibuja: se descarta la sala y queda el fondo limpio
 await p.click('#b-obj-atras');await p.setInputFiles('#archivos-obj',['esc-cubos.jpg']);await p.waitForSelector('#p-objeto.visible');
 t('foto nueva: se borra la imagen anterior',await p.evaluate(()=>document.getElementById('amb-marco').classList.contains('oculto')));
-await p.fill('#obj-titulo','Cubos');await p.fill('#obj-artista','Prueba');await p.fill('#obj-alto','55');await p.selectOption('#obj-mueble','consola');await p.click('#b-ambientar');
+await p.fill('#obj-titulo','Cubos');await p.fill('#obj-artista','Prueba');await p.fill('#obj-alto','55');await p.click('[data-mueble=consola]');await p.click('#b-ambientar');
 await p.waitForSelector('#amb-marco:not(.oculto)',{timeout:60000});
 console.log('   cubos',await veri());
 t('cubos: la sala se descarta',(await texto('amb-nota')).includes('fondo limpio'));
@@ -56,6 +56,14 @@ await p.fill('#obj-titulo','Caja sinsala');await p.fill('#obj-artista','Prueba')
 await p.waitForSelector('#amb-marco:not(.oculto)',{timeout:60000});
 t('sin sala: queda el fondo limpio',(await texto('amb-nota')).includes('fondo limpio'));
 await p.click('#b-amb-quitar');t('se puede quitar la imagen',await p.evaluate(()=>document.getElementById('amb-marco').classList.contains('oculto')));
+
+// 3b. Google pierde la primera respuesta de cada petición: el admin la repite solo y sale bien
+await p.click('#b-obj-atras');await p.setInputFiles('#archivos-obj',['esc-caja.jpg']);await p.waitForSelector('#p-objeto.visible');
+await p.fill('#obj-titulo','Caja pierde');await p.fill('#obj-artista','Prueba');await p.fill('#obj-alto','40');await p.click('[data-mueble=pedestal]');await p.click('#b-ambientar');
+await p.waitForSelector('#amb-marco:not(.oculto)',{timeout:90000});
+e=await estado();t('respuestas perdidas: se repiten solas y la pieza queda en sala',e.perdidas===2&&(await texto('amb-nota')).includes('Imagen referencial'),'perdidas '+e.perdidas);
+t('muebles: tres opciones con foto, una elegida',await p.locator('#obj-muebles button img').count()===3&&await p.locator('#obj-muebles [aria-pressed=true]').count()===1&&await p.inputValue('#obj-mueble')==='pedestal');
+await p.screenshot({path:'cap-20-muebles.png',fullPage:true});
 
 // 4. silueta que no corresponde a la foto: no se inventa nada
 await p.click('#b-obj-atras');await p.setInputFiles('#archivos-obj',['marina.jpg']);await p.waitForSelector('#p-objeto.visible');

@@ -64,6 +64,10 @@ button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underl
 .salas button span{display:block;padding:9px 10px 2px;font:650 16px/1.15 var(--titulo)}
 .salas button small{display:block;padding:0 10px 10px;font-size:12.5px;color:var(--gris);font-weight:400;line-height:1.3}
 .salas button[aria-pressed=true]{border:3px solid var(--magenta)}
+.muebles{grid-template-columns:repeat(3,1fr);gap:8px}
+.muebles button img{aspect-ratio:1}
+.muebles button span{font-size:14px;padding:8px 8px 2px}
+.muebles button small{padding:0 8px 8px;font-size:12px}
 .salas button:disabled img{filter:grayscale(1)}
 .deslizador{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin-bottom:16px;font-size:13.5px}
 .deslizador input{width:100%;accent-color:var(--terracota)}
@@ -189,14 +193,21 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
       <div><label for="obj-fondo">Fondo (cm)</label><input type="number" id="obj-fondo" inputmode="decimal" min="1" max="600" step="0.5"></div>
     </div>
     <h2>Verla <em>en una sala</em></h2>
-    <p class="nota">Se usa la primera foto. La pieza no se toca: solo cambia lo que tiene alrededor. Hace falta el alto en centímetros, con la base incluida.</p>
-    <label for="obj-mueble">Sobre qué la ponemos</label>
-    <select id="obj-mueble"><option value="consola">Consola de madera oscura</option><option value="aparador">Aparador de madera clara</option><option value="pedestal">Pedestal blanco</option></select>
+    <p class="nota">Opcional. Se crea una imagen de la pieza sobre un mueble, para que el cliente se la imagine en su casa. La pieza es la de tu foto, no se cambia: solo se cambia lo que tiene alrededor.</p>
+    <label id="l-mueble">1. Elige sobre qué la ponemos</label>
+    <div class="salas muebles" id="obj-muebles" role="group" aria-labelledby="l-mueble">
+      <button type="button" data-mueble="consola" aria-pressed="true"><img src="muebles/consola.jpg" alt="" loading="lazy"><span>Consola oscura</span><small>Mesa alta de madera oscura contra la pared.</small></button>
+      <button type="button" data-mueble="aparador" aria-pressed="false"><img src="muebles/aparador.jpg" alt="" loading="lazy"><span>Aparador claro</span><small>Mueble de madera clara, visto un poco desde arriba.</small></button>
+      <button type="button" data-mueble="pedestal" aria-pressed="false"><img src="muebles/pedestal.jpg" alt="" loading="lazy"><span>Pedestal blanco</span><small>Columna blanca, como en una exposición.</small></button>
+    </div>
+    <select id="obj-mueble" class="oculto" aria-hidden="true" tabindex="-1"><option value="consola">Consola</option><option value="aparador">Aparador</option><option value="pedestal">Pedestal</option></select>
+    <p class="nota">Las fotos son de ejemplo. La sala final se arma alrededor de tu foto, así que cambia un poco cada vez.</p>
+    <label>2. Crea la imagen</label>
     <div id="amb-avisos"></div>
     <div class="marco oculto" id="amb-marco"><canvas id="c-amb"></canvas></div>
     <p class="nota oculto" id="amb-nota"></p>
-    <div id="amb-espera" class="aviso oculto">Preparando la imagen. Tarda alrededor de un minuto; no cierres la página.</div>
-    <button id="b-ambientar" class="otro">Ambientar la pieza</button>
+    <div id="amb-espera" class="aviso oculto"><b id="amb-paso">Paso 1 de 2: separando la pieza del fondo.</b> En total tarda entre uno y dos minutos. No cierres ni cambies de página.</div>
+    <button id="b-ambientar" class="otro">Crear la imagen en sala</button>
     <button id="b-amb-quitar" class="enlace oculto">No usar esta imagen</button>
     <label class="casilla"><input type="checkbox" id="obj-publicar"> Publicarla ya en la web</label>
     <div id="obj-avisos"></div>
@@ -318,9 +329,9 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
   <input type="file" id="archivos-obj" accept="image/*" multiple>
   <footer>Uso interno de Creamdo Art. <button class="enlace oculto" id="b-salir" style="padding:0;font-size:12.5px">Cerrar sesión</button></footer>
 </main>
-<script src="../config.js?v=9"></script>
-<script src="salas.js?v=9"></script>
-<script src="imagen.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="../config.js?v=10"></script>
+<script src="salas.js?v=10"></script>
+<script src="imagen.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

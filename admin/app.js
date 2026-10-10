@@ -26,22 +26,32 @@
   function guardarToken(t) { E.token = t; try { t ? sessionStorage.setItem('creamdo', t) : sessionStorage.removeItem('creamdo'); } catch (e) {} }
   function tokenVigente(t) { return !!t && Number(String(t).split('.')[0]) > Date.now() + 60000; }
 
-  function llamar(datos) {
-    // Google a veces tarda o contesta con una página de error (sobre todo recién publicada una versión):
-    // se corta la espera y se da un mensaje claro en vez de un error de JSON.
-    var corte = new AbortController(), reloj = setTimeout(function () { corte.abort(); }, datos.accion === 'integrar' ? 150000 : 45000);
+  // Google a veces ejecuta la petición pero no entrega la respuesta (llega la portada del servicio o una página).
+  // Entonces se repite la misma petición con el mismo "pid": el backend devuelve lo que ya hizo, sin repetirlo.
+  function pidNuevo() {
+    var a = new Uint8Array(16); (window.crypto || window.msCrypto).getRandomValues(a);
+    return Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+  }
+  function unIntento(datos) {
+    var corte = new AbortController(), reloj = setTimeout(function () { corte.abort(); }, datos.accion === 'integrar' ? 150000 : 60000);
     return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos), signal: corte.signal })
       .then(function (r) { return r.text(); })
       .then(function (t) {
         var j = null; try { j = JSON.parse(t); } catch (e) {}
-        // una respuesta sin "accion" atendida (la de la portada del servicio) tampoco vale
-        if (!j || typeof j !== 'object' || j.servicio) throw new Error('El servidor no contestó bien. Espera un minuto y vuelve a intentarlo.');
+        if (!j || typeof j !== 'object' || j.servicio) { var e = new Error('El servidor no contestó bien. Espera un minuto y vuelve a intentarlo.'); e.perdida = true; throw e; }
         return j;
       }, function (e) { throw new Error(e && e.name === 'AbortError' ? 'El servidor tardó demasiado. Espera un minuto y vuelve a intentarlo.' : 'Failed to fetch'); })
       .then(function (j) { clearTimeout(reloj); return j; }, function (e) { clearTimeout(reloj); throw e; });
   }
+  function llamar(datos) {
+    if (datos.accion !== 'entrar') datos.pid = pidNuevo();
+    var quedan = 2;
+    function probar() {
+      return unIntento(datos).catch(function (e) { if (e.perdida && quedan-- > 0) return probar(); throw e; });
+    }
+    return probar();
+  }
 
-  // ---------- entrar ----------
   $('f-entrar').addEventListener('submit', function (ev) {
     ev.preventDefault();
     var b = $('b-entrar'), err = $('entrar-error');
@@ -355,7 +365,7 @@
   var objFotos = [], amb = null;   // amb: { lienzo, enSala } la imagen ambientada o de estudio
   function quitarAmbiente() {
     amb = null; ['amb-marco', 'amb-nota', 'b-amb-quitar'].forEach(function (id) { $(id).classList.add('oculto'); }); limpiar('amb-avisos');
-    $('b-ambientar').textContent = 'Ambientar la pieza';
+    $('b-ambientar').textContent = 'Crear la imagen en sala';
   }
   $('archivos-obj').addEventListener('change', function () {
     var fs = Array.prototype.slice.call(this.files || [], 0, 4); this.value = '';
@@ -410,6 +420,12 @@
     botonGuardar($('b-obj-guardar'), false);
   }
   $('b-amb-quitar').addEventListener('click', quitarAmbiente);
+  [].forEach.call(document.querySelectorAll('#obj-muebles button'), function (b) {
+    b.addEventListener('click', function () {
+      $('obj-mueble').value = b.getAttribute('data-mueble');
+      [].forEach.call(document.querySelectorAll('#obj-muebles button'), function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
   $('b-ambientar').addEventListener('click', function () {
     limpiar('amb-avisos');
     var alto = parseFloat($('obj-alto').value) || 0;
@@ -418,9 +434,15 @@
     if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
     var original = objFotos[0], b64 = jpeg(original, 1800), boton = $('b-ambientar');
     boton.disabled = true; $('amb-espera').classList.remove('oculto');
-    // Dos peticiones a la vez: la silueta de la pieza y la sala. La sala puede fallar sin que se pierda la silueta.
-    var sala = pedirImagen({ tipo: 'entorno', imagen: b64, mueble: $('obj-mueble').value, altoCm: alto }).catch(function (e) { if (e.sesion) throw e; return null; });
-    Promise.all([pedirImagen({ tipo: 'mascara', imagen: b64 }), sala]).then(function (r) {
+    // Una petición detrás de otra, nunca a la vez: con dos a la vez Google entrega mal una de las respuestas.
+    // Primero la silueta; si la sala falla después, la silueta sirve igual.
+    $('amb-paso').textContent = 'Paso 1 de 2: separando la pieza del fondo.';
+    pedirImagen({ tipo: 'mascara', imagen: b64 }).then(function (mascara) {
+      $('amb-paso').textContent = 'Paso 2 de 2: creando la sala.';
+      return pedirImagen({ tipo: 'entorno', imagen: b64, mueble: $('obj-mueble').value, altoCm: alto })
+        .catch(function (e) { if (e.sesion) throw e; return null; })
+        .then(function (sala) { return [mascara, sala]; });
+    }).then(function (r) {
       var sil = I.silueta(original, r[0]);
       E.verificacionObjeto = { silueta: sil.parecido || 0, area: sil.area || 0 };
       if (!sil.ok) {

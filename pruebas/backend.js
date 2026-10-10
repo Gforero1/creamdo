@@ -3,10 +3,10 @@ const fs=require('fs'),crypto=require('crypto'),vm=require('vm');
 const props={},cache={},filas=[];let llamadas=[],respuesta={code:200,body:{steps:[{type:'model_output',content:[{type:'image',mime_type:'image/png',data:'A'.repeat(2000)}]}]}};
 const bytes=b=>Array.from(b).map(x=>x>127?x-256:x);
 const traducidos=[];
-const ctx={console:{error(){},log(){},warn(){}},
+const ctx={console:{error(x){if(process.env.VER)console.log('ERR',x)},log(){},warn(){}},
  LanguageApp:{translate:(t,a,b)=>{traducidos.push(t);if(t==='ROMPE')throw new Error('cuota');return 'EN:'+t}},
  PropertiesService:{getScriptProperties:()=>({getProperty:k=>props[k]||null,setProperty:(k,v)=>{props[k]=v}})},
- CacheService:{getScriptCache:()=>({get:k=>cache[k]||null,put:(k,v)=>{cache[k]=v},remove:k=>{delete cache[k]}})},
+ CacheService:{getScriptCache:()=>({get:k=>cache[k]||null,put:(k,v)=>{cache[k]=v},remove:k=>{delete cache[k]},putAll:o=>Object.assign(cache,o),getAll:ks=>Object.fromEntries(ks.filter(k=>k in cache).map(k=>[k,cache[k]]))})},
  LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})},
  Utilities:{getUuid:()=>crypto.randomUUID(),sleep(){},DigestAlgorithm:{SHA_256:1},Charset:{UTF_8:1},
   computeDigest:(a,t)=>bytes(crypto.createHash('sha256').update(t,'utf8').digest()),
@@ -21,7 +21,7 @@ let ok=0,mal=0;const t=(n,c)=>{c?ok++:(mal++,console.log('FALLA:',n))};
 t('sin contraseña creada',post({accion:'entrar',clave:'x'}).ok===false);
 props.PANEL_SAL='sal';props.PANEL_HUELLA=crypto.createHash('sha256').update('sal'+'clave-de-prueba').digest('hex');props.SECRETO_SESION='secreto';props.GEMINI_API_KEY='CLAVE-FALSA-DE-PRUEBA';
 t('clave mala',post({accion:'entrar',clave:'no'}).ok===false);
-const e=post({accion:'entrar',clave:'clave-de-prueba'});t('clave buena da token',e.ok&&/^\d+\.[0-9a-f]{64}$/.test(e.token));
+const e=post({accion:'entrar',clave:'clave-de-prueba'});if(!e.ok)console.log('DEBUG',JSON.stringify(e));t('clave buena da token',e.ok&&/^\d+\.[0-9a-f]{64}$/.test(e.token));
 const img='B'.repeat(5000);
 t('sin token',post({accion:'integrar',tipo:'pintura',imagen:img}).error==='sesion');
 t('token manipulado',post({accion:'integrar',token:(Date.now()+9e9)+'.'+e.token.split('.')[1],tipo:'pintura',imagen:img}).error==='sesion');
@@ -41,6 +41,11 @@ t('entorno: tipo heredado no cuela',post({accion:'integrar',token:e.token,tipo:'
 const en=post({accion:'integrar',token:e.token,tipo:'entorno',mueble:'aparador',altoCm:'40.26',imagen:img});
 t('entorno: lleva el mueble de la lista y el alto real',en.ok&&txt().includes('light natural-wood sideboard')&&txt().includes('is 40.3 cm tall'));
 const ma=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img});t('máscara: pide la base incluida',ma.ok&&txt().includes('INCLUDES the base'));}
+{const antes=llamadas.length,pid='abcdef0123456789abcdef01';
+const r1=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img,pid}),r2=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img,pid});
+t('repetida con el mismo pid: no vuelve a llamar a Gemini',r1.ok&&r2.ok&&r2.imagen===r1.imagen&&llamadas.length===antes+1);
+t('pid sin sesión no devuelve lo recordado',post({accion:'integrar',tipo:'mascara',imagen:img,pid}).error==='sesion');
+t('pid mal formado se ignora',post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img,pid:'../x'}).ok&&llamadas.length===antes+2);}
 respuesta={code:429,body:{error:{message:'quota CLAVE-FALSA-DE-PRUEBA'}}};const f=post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img});
 t('error de Gemini sin filtrar detalle',f.ok===false&&!JSON.stringify(f).includes('quota'));
 props['USO_2026-10-10']='60';t('tope diario',post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img}).error.includes('tope'));
