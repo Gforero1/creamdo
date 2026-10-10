@@ -38,15 +38,13 @@ await p.screenshot({path:'cap-6-resultado.png',fullPage:true});
 fs.writeFileSync('e2e-final-romanilla.jpg',Buffer.from((await p.evaluate(()=>__panel.E.final.toDataURL('image/jpeg',.92))).split(',')[1],'base64'));
 const [dl]=await Promise.all([p.waitForEvent('download'),p.click('#b-descargar')]);
 t('nombre de archivo',dl.suggestedFilename()==='creamdo-marina-romanilla.jpg',dl.suggestedFilename());
-// enviar a Shopify
-t('título y artista ya rellenos',await p.inputValue('#sh-titulo')==='Marina'&&await p.inputValue('#sh-artista')==='Enrique Lobo');
-await p.fill('#sh-precio','1000');await p.fill('#sh-tecnica','Acrílico sobre lienzo');await p.click('#b-shopify');
-await p.waitForSelector('#sh-avisos .bien');
-t('envía a Shopify y enseña el enlace',(await textoAvisos(p,'sh-avisos')).includes('borrador')&&await p.evaluate(()=>document.querySelector('#sh-avisos a').href)==='https://admin.shopify.com/store/creamdo/products/123');
-const ult=await (await fetch('http://localhost:8765/api/ultima',{method:'POST',body:'{}'})).json();
-t('manda la obra real y la escena',ult.n===2&&ult.precio===1000&&ult.tipo==='Pintura',JSON.stringify(ult));
-t('no deja enviar dos veces',await p.evaluate(()=>document.getElementById('b-shopify').disabled));
-await p.screenshot({path:'cap-10-shopify.png',fullPage:true});
+// guardar en el catálogo
+t('título y artista ya rellenos',await p.inputValue('#cat-titulo')==='Marina'&&await p.inputValue('#cat-artista')==='Enrique Lobo');
+await p.fill('#cat-precio','1000');await p.fill('#cat-tecnica','Acrílico sobre lienzo');await p.click('#b-catalogo');
+await p.waitForSelector('#cat-avisos .bien');
+t('guarda como borrador y lo dice',(await textoAvisos(p,'cat-avisos')).includes('borrador'));
+t('no deja guardar dos veces',await p.evaluate(()=>document.getElementById('b-catalogo').disabled));
+await p.screenshot({path:'cap-10-catalogo.png',fullPage:true});
 // otra sala donde la IA devuelve una escena que no corresponde: debe descartarla
 t('sala pequeña desactivada para obra de 150 cm',await p.evaluate(()=>document.querySelector('[data-sala=colonial]').disabled));
 await p.route('**/api',r=>r.fulfill({contentType:'application/json',body:JSON.stringify({ok:true,mime:'image/png',imagen:fs.readFileSync('gemini-A.png').toString('base64')})}));
@@ -59,6 +57,22 @@ await p.unroute('**/api');
 await p.click('#b-nueva');await p.setInputFiles('#archivo','marina.jpg');await p.waitForSelector('#p-esquinas.visible');await p.click('#b-recortada');
 await p.fill('#ancho','380');await p.fill('#alto','261');await p.waitForTimeout(500);await p.click('#b-med-sig');await p.waitForSelector('#p-sala.visible');
 t('obra enorme: ninguna sala disponible',await p.evaluate(()=>!document.querySelector('#salas button:not(:disabled)'))&&(await textoAvisos(p,'sala-avisos')).includes('no cabe'));
+// escultura: fotos tal cual
+await p.reload();await p.waitForSelector('#p-foto.visible');await p.setInputFiles('#archivos-obj',['marina.jpg','mala.jpg']);await p.waitForSelector('#p-objeto.visible');
+t('escultura: enseña las dos fotos',await p.evaluate(()=>document.querySelectorAll('#obj-fotos img').length)===2);
+await p.click('#b-obj-guardar');t('escultura: pide título y artista',(await textoAvisos(p,'obj-avisos')).includes('título'));
+await p.fill('#obj-titulo','Virgen de Coromoto');await p.fill('#obj-artista','María Lea Cerdá');await p.click('#b-obj-guardar');
+t('escultura: pide el alto',(await textoAvisos(p,'obj-avisos')).includes('alto'));
+await p.fill('#obj-alto','20');await p.fill('#obj-ancho','12');await p.fill('#obj-precio','115');await p.check('#obj-publicar');await p.click('#b-obj-guardar');await p.waitForSelector('#obj-avisos .bien');
+t('escultura: guardada y publicada',(await textoAvisos(p,'obj-avisos')).includes('publicada'));
+await p.screenshot({path:'cap-11-objeto.png',fullPage:true});
+// lista de obras
+await p.click('#b-ver-obras');await p.waitForSelector('#obras-lista .obra');
+t('lista: dos obras, la última primero',await p.evaluate(()=>[...document.querySelectorAll('#obras-lista .obra b')].map(b=>b.textContent).join('|'))==='Virgen de Coromoto|Marina');
+await p.selectOption('#obras-lista .obra:nth-child(2) select','Publicada');await p.waitForSelector('#obras-avisos .bien');
+const lista=await (await fetch('http://localhost:8765/api',{method:'POST',body:JSON.stringify({accion:'listarObras',token:await p.evaluate(()=>__panel.E.token)})})).json();
+t('lista: el cambio de estado llega al servidor',lista.obras[1].estado==='Publicada'&&lista.obras[1]._tam.length===2&&lista.obras[0].tipo==='Escultura',JSON.stringify(lista.obras.map(o=>[o.titulo,o.estado,o._tam])));
+await p.screenshot({path:'cap-12-obras.png',fullPage:true});
 await p.context().close();
 
 // --- 2. foto mala ---

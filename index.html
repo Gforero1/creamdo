@@ -65,6 +65,15 @@ button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underl
 .casilla input{width:20px;height:20px;accent-color:var(--terracota)}
 .espera{font:italic 500 24px/1.2 var(--titulo);padding:26px 0;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);margin-bottom:16px}
 .espera small{display:block;font:400 14px/1.4 var(--texto);color:var(--gris);margin-top:6px}
+.tres{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.tiras{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 18px}
+.tiras img{width:100%;aspect-ratio:1;object-fit:cover;display:block;background:var(--papel2)}
+.obra{display:grid;grid-template-columns:84px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--linea)}
+.obra img{width:84px;height:84px;object-fit:cover;background:var(--papel2)}
+.obra b{font:500 20px/1.15 var(--titulo);display:block}
+.obra small{color:var(--gris);display:block;margin-bottom:8px}
+.obra .dos{gap:8px}
+.obra select,.obra input{padding:9px 8px;margin-bottom:0;font-size:15px}
 .oculto{display:none!important}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
 footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padding-top:12px;margin-top:34px}
@@ -72,7 +81,7 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
 </head>
 <body>
 <main>
-  <header class="marca"><b>CREAMDO</b><span id="cabecera">Obra en sala</span></header>
+  <header class="marca"><b>CREAMDO</b><span><button class="enlace oculto" id="b-ver-obras" style="padding:0;font-size:13px">Obras</button> <span id="cabecera">Obra en sala</span></span></header>
 
   <section id="p-entrar">
     <p class="paso">Acceso</p>
@@ -96,7 +105,39 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     </ol>
     <label class="boton acento" for="archivo" id="l-archivo">Tomar o elegir foto</label>
     <input type="file" id="archivo" accept="image/*">
+    <label class="boton otro" for="archivos-obj">Escultura u objeto, sin sala</label>
+    <input type="file" id="archivos-obj" accept="image/*" multiple>
     <div id="foto-error" class="aviso grave oculto"></div>
+  </section>
+
+  <section id="p-objeto">
+    <p class="paso">Escultura u objeto</p>
+    <h1>Datos <em>de la pieza</em></h1>
+    <div class="tiras" id="obj-fotos"></div>
+    <label for="obj-titulo">Título</label><input type="text" id="obj-titulo" maxlength="80">
+    <label for="obj-artista">Artista</label><input type="text" id="obj-artista" maxlength="80">
+    <div class="dos">
+      <div><label for="obj-tipo">Tipo</label><select id="obj-tipo"><option>Escultura</option><option>Arte sacro</option><option>Objeto</option></select></div>
+      <div><label for="obj-precio">Precio en $ (opcional)</label><input type="number" id="obj-precio" inputmode="decimal" min="0" step="1"></div>
+    </div>
+    <label for="obj-tecnica">Material o técnica (opcional)</label><input type="text" id="obj-tecnica" maxlength="80" placeholder="Madera tallada y policromada">
+    <div class="tres">
+      <div><label for="obj-alto">Alto (cm)</label><input type="number" id="obj-alto" inputmode="decimal" min="1" max="600" step="0.5"></div>
+      <div><label for="obj-ancho">Ancho (cm)</label><input type="number" id="obj-ancho" inputmode="decimal" min="1" max="600" step="0.5"></div>
+      <div><label for="obj-fondo">Fondo (cm)</label><input type="number" id="obj-fondo" inputmode="decimal" min="1" max="600" step="0.5"></div>
+    </div>
+    <label class="casilla"><input type="checkbox" id="obj-publicar"> Publicarla ya en la web</label>
+    <div id="obj-avisos"></div>
+    <button id="b-obj-guardar" class="acento">Guardar en el catálogo</button>
+    <button id="b-obj-atras" class="enlace">Volver</button>
+  </section>
+
+  <section id="p-obras">
+    <p class="paso">Catálogo</p>
+    <h1>Las obras <em>guardadas</em></h1>
+    <div id="obras-avisos"></div>
+    <div id="obras-lista"></div>
+    <button id="b-obras-nueva" class="acento">Añadir una obra</button>
   </section>
 
   <section id="p-esquinas">
@@ -153,19 +194,20 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     <button id="b-nueva" class="enlace">Empezar con otra obra</button>
     <p class="nota">Imagen referencial: la sala es un decorado y la obra es su foto real, colocada a escala.</p>
 
-    <div id="shopify">
-      <h2>Enviar a <em>la tienda</em></h2>
-      <p class="nota" id="sh-cuenta"></p>
-      <label for="sh-titulo">Título</label><input type="text" id="sh-titulo" maxlength="80">
-      <label for="sh-artista">Artista</label><input type="text" id="sh-artista" maxlength="80">
+    <div id="catalogo">
+      <h2>Guardar en <em>el catálogo</em></h2>
+      <p class="nota" id="cat-cuenta"></p>
+      <label for="cat-titulo">Título</label><input type="text" id="cat-titulo" maxlength="80">
+      <label for="cat-artista">Artista</label><input type="text" id="cat-artista" maxlength="80">
       <div class="dos">
-        <div><label for="sh-tipo">Tipo</label><select id="sh-tipo"><option>Pintura</option><option>Retablo</option></select></div>
-        <div><label for="sh-precio">Precio en $ (opcional)</label><input type="number" id="sh-precio" inputmode="decimal" min="0" step="1"></div>
+        <div><label for="cat-tipo">Tipo</label><select id="cat-tipo"><option>Pintura</option><option>Retablo</option><option>Arte sacro</option></select></div>
+        <div><label for="cat-precio">Precio en $ (opcional)</label><input type="number" id="cat-precio" inputmode="decimal" min="0" step="1"></div>
       </div>
-      <label for="sh-tecnica">Técnica (opcional)</label><input type="text" id="sh-tecnica" maxlength="80" placeholder="Acrílico sobre lienzo">
-      <div id="sh-avisos"></div>
-      <button id="b-shopify">Enviar a Shopify como borrador</button>
-      <p class="nota">Llega a Shopify sin publicar. Se revisa allí y se publica cuando esté lista.</p>
+      <label for="cat-tecnica">Técnica (opcional)</label><input type="text" id="cat-tecnica" maxlength="80" placeholder="Acrílico sobre lienzo">
+      <label class="casilla"><input type="checkbox" id="cat-publicar"> Publicarla ya en la web</label>
+      <div id="cat-avisos"></div>
+      <button id="b-catalogo">Guardar en el catálogo</button>
+      <p class="nota">Sin marcar la casilla queda como borrador y se publica después desde "Obras".</p>
     </div>
   </section>
 

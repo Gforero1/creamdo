@@ -66,3 +66,29 @@ console.log(ok+' pruebas bien, '+mal+' mal');
   t2('sin sesión no envía',post({...base,token:'x'}).error==='sesion');
   console.log('Shopify: '+ok2+' pruebas bien, '+mal2+' mal');
 })();
+
+// ---- catálogo propio ----
+(function(){
+  let ok3=0,mal3=0;const t3=(n,c)=>{c?ok3++:(mal3++,console.log('FALLA:',n))};
+  delete cache.fallos;const e=post({accion:'entrar',clave:'clave-de-prueba'});
+  const tabla=[['ID']];const subidos=[];const permisos=[];
+  ctx.SpreadsheetApp.getActiveSpreadsheet=()=>({getSheetByName:n=>n==='Obras'?{appendRow:r=>tabla.push(r),getDataRange:()=>({getValues:()=>tabla}),getRange:(f,c)=>({setValue:v=>{tabla[f-1][c-1]=v}})}:{appendRow(){}}});
+  ctx.Drive={Files:{create:(meta,blob)=>{subidos.push(meta);return{id:'idDrive'+subidos.length+'abcdefgh'}}},Permissions:{create:(p,id)=>permisos.push([p,id])}};
+  ctx.Utilities.base64Decode=s=>[1];ctx.Utilities.newBlob=()=>({});
+  const img='D'.repeat(3000);const base={accion:'guardarObra',token:e.token,titulo:'=Marina',artista:'Enrique Lobo',tipoObra:'Pintura',tecnica:'Acrílico',precio:1000,anchoCm:150,altoCm:103,estado:'Borrador',imagenes:[{datos:img},{datos:img}]};
+  const r=post(base);t3('guarda la obra',r.ok&&r.estado==='Borrador');
+  t3('crea la carpeta pública una sola vez',permisos.length===1&&permisos[0][0].type==='anyone'&&props.CARPETA_FOTOS);
+  t3('sube dos fotos a esa carpeta',subidos.filter(m=>m.parents).length===2&&subidos.filter(m=>m.parents).every(m=>m.parents[0]===props.CARPETA_FOTOS));
+  t3('fila saneada',tabla[1][3]==="'=Marina"&&tabla[1][2]==='Borrador'&&tabla[1][11].split(',').length===2);
+  t3('borrador no sale en el catálogo público',JSON.parse(ctx.doGet({parameter:{catalogo:'1'}}).t).obras.length===0);
+  t3('listar exige sesión',post({accion:'listarObras'}).error==='sesion');
+  const l=post({accion:'listarObras',token:e.token});t3('listar devuelve la obra',l.obras.length===1&&l.obras[0].precio===1000);
+  delete cache.catalogo;
+  t3('publicar desde la lista',post({accion:'cambiarObra',token:e.token,id:r.id,estado:'Publicada'}).ok&&tabla[1][2]==='Publicada');
+  const pub=JSON.parse(ctx.doGet({parameter:{catalogo:'1'}}).t);t3('ya sale en el catálogo público, sin datos de sesión',pub.obras.length===1&&pub.obras[0].imagenes.length===2&&!JSON.stringify(pub).includes('token'));
+  t3('estado inventado se rechaza',post({accion:'cambiarObra',token:e.token,id:r.id,estado:'Regalada'}).ok===false);
+  t3('obra inexistente',post({accion:'cambiarObra',token:e.token,id:'nada',estado:'Vendida'}).ok===false);
+  t3('sin alto no guarda',post({...base,altoCm:0}).ok===false);
+  t3('guardar exige sesión',post({...base,token:'x'}).error==='sesion');
+  console.log('Catálogo: '+ok3+' pruebas bien, '+mal3+' mal');
+})();

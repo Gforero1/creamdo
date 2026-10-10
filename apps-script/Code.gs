@@ -14,7 +14,9 @@ var FALLOS_MAX = 8;                // intentos de clave antes de bloquear
 var MINUTOS_BLOQUEO = 10;
 var MAX_IMAGEN_B64 = 7 * 1024 * 1024;
 var SHOPIFY_VERSION = '2026-07';
-var TIPOS_OBRA = ['Pintura', 'Retablo'];
+var TIPOS_OBRA = ['Pintura', 'Retablo', 'Escultura', 'Arte sacro', 'Objeto'];
+var ESTADOS = ['Borrador', 'Publicada', 'Vendida', 'Oculta'];
+var COLUMNAS = ['ID', 'Creada', 'Estado', 'Título', 'Artista', 'Tipo', 'Técnica', 'Ancho cm', 'Alto cm', 'Fondo cm', 'Precio USD', 'Imágenes', 'Actualizada'];
 
 // El texto que recibe Gemini se decide aquí, no en la web: así la clave no sirve
 // para pedirle cualquier otra cosa aunque alguien robe una sesión.
@@ -48,9 +50,16 @@ function instalar() {
     hoja.appendRow(['Fecha', 'Título', 'Artista', 'Ancho cm', 'Alto cm', 'Sala', 'Resultado']);
     hoja.setFrozenRows(1);
   }
+  var obras = libro.getSheetByName('Obras') || libro.insertSheet('Obras', 0);
+  if (obras.getLastRow() === 0) {
+    obras.appendRow(COLUMNAS);
+    obras.setFrozenRows(1);
+    obras.getRange(1, 1, 1, COLUMNAS.length).setFontWeight('bold');
+  }
   var p = PropertiesService.getScriptProperties();
   if (!p.getProperty('SECRETO_SESION')) p.setProperty('SECRETO_SESION', Utilities.getUuid() + Utilities.getUuid());
-  SpreadsheetApp.getUi().alert('Hoja lista.');
+  carpetaFotos_();
+  SpreadsheetApp.getUi().alert('Hoja lista. Las obras se guardan en la pestaña "Obras" y sus fotos en la carpeta de Drive "Creamdo catálogo (fotos públicas)".');
 }
 
 function guardarClaveGemini() {
@@ -87,6 +96,99 @@ function verEstado() {
     'Shopify: ' + (p.getProperty('SHOPIFY_CLIENT_SECRET') ? 'conectado a ' + p.getProperty('SHOPIFY_TIENDA') : 'sin conectar') + '\n' +
     'Imágenes generadas hoy: ' + hoy + ' de ' + LIMITE_DIARIO);
 }
+
+// ---------- catálogo propio ----------
+// Carpeta de Drive con las fotos del catálogo. Con el permiso drive.file el script
+// solo ve lo que él mismo crea, no el resto del Drive.
+function carpetaFotos_() {
+  var p = PropertiesService.getScriptProperties(), id = p.getProperty('CARPETA_FOTOS');
+  if (id) return id;
+  var c = Drive.Files.create({ name: 'Creamdo catálogo (fotos públicas)', mimeType: 'application/vnd.google-apps.folder' }, null, { fields: 'id' });
+  Drive.Permissions.create({ role: 'reader', type: 'anyone' }, c.id);
+  p.setProperty('CARPETA_FOTOS', c.id);
+  return c.id;
+}
+
+function hojaObras_() {
+  var h = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Obras');
+  if (!h) throw new Error('Falta preparar la hoja (menú Creamdo > 1)');
+  return h;
+}
+
+function filaAObra_(f) {
+  return { id: String(f[0]), creada: f[1] instanceof Date ? f[1].toISOString() : String(f[1]), estado: String(f[2]), titulo: String(f[3]), artista: String(f[4]),
+    tipo: String(f[5]), tecnica: String(f[6]), anchoCm: Number(f[7]) || 0, altoCm: Number(f[8]) || 0, fondoCm: Number(f[9]) || 0,
+    precio: Number(f[10]) || 0, imagenes: String(f[11] || '').split(',').filter(function (x) { return /^[A-Za-z0-9_-]{10,}$/.test(x); }) };
+}
+
+function leerObras_() {
+  var v = hojaObras_().getDataRange().getValues();
+  return v.slice(1).filter(function (f) { return f[0]; }).map(filaAObra_);
+}
+
+// Lo que ve la web pública: solo obras publicadas o vendidas, sin datos internos.
+function catalogoPublico_() {
+  var cache = CacheService.getScriptCache(), g = cache.get('catalogo');
+  if (g) return JSON.parse(g);
+  var obras = leerObras_().filter(function (o) { return o.estado === 'Publicada' || o.estado === 'Vendida'; }).reverse();
+  var r = { ok: true, obras: obras };
+  var t = JSON.stringify(r);
+  if (t.length < 95000) cache.put('catalogo', t, 120);
+  return r;
+}
+
+function guardarObra_(d) {
+  if (!sesionValida_(d.token)) return { ok: false, error: 'sesion' };
+  var titulo = limpioTexto_(d.titulo, 80), artista = limpioTexto_(d.artista, 80), tecnica = limpioTexto_(d.tecnica, 80);
+  var tipo = TIPOS_OBRA.indexOf(d.tipoObra) >= 0 ? d.tipoObra : TIPOS_OBRA[0];
+  var estado = d.estado === 'Publicada' ? 'Publicada' : 'Borrador';
+  var ancho = medida_(d.anchoCm), alto = medida_(d.altoCm), fondo = medida_(d.fondoCm), precio = Math.max(0, Number(d.precio) || 0);
+  if (!titulo || !artista) return { ok: false, error: 'Faltan el título y el artista' };
+  if (!alto) return { ok: false, error: 'Falta al menos el alto de la obra' };
+  var imgs = Array.isArray(d.imagenes) ? d.imagenes.slice(0, 5) : [];
+  if (!imgs.length) return { ok: false, error: 'No hay imágenes que guardar' };
+  for (var i = 0; i < imgs.length; i++) {
+    var dato = String(imgs[i].datos || '');
+    if (!/^[A-Za-z0-9+/=]+$/.test(dato) || dato.length < 1000 || dato.length > MAX_IMAGEN_B64) return { ok: false, error: 'Imagen no válida' };
+  }
+  var id = 'o' + Date.now().toString(36);
+  var base = (titulo + '-' + artista).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'obra';
+  var carpeta = carpetaFotos_();
+  var ids = imgs.map(function (im, n) {
+    var blob = Utilities.newBlob(Utilities.base64Decode(im.datos), 'image/jpeg', base + '-' + (n + 1) + '.jpg');
+    return Drive.Files.create({ name: base + '-' + (n + 1) + '.jpg', parents: [carpeta] }, blob, { fields: 'id' }).id;
+  });
+  var cerrojo = LockService.getScriptLock(); cerrojo.waitLock(15000);
+  hojaObras_().appendRow([id, new Date(), estado, hoja_(titulo), hoja_(artista), tipo, hoja_(tecnica), ancho || '', alto, fondo || '', precio || '', ids.join(','), new Date()]);
+  cerrojo.releaseLock();
+  CacheService.getScriptCache().remove('catalogo');
+  return { ok: true, id: id, estado: estado, titulo: titulo };
+}
+
+function listarObras_(d) {
+  if (!sesionValida_(d.token)) return { ok: false, error: 'sesion' };
+  return { ok: true, obras: leerObras_().reverse() };
+}
+
+function cambiarObra_(d) {
+  if (!sesionValida_(d.token)) return { ok: false, error: 'sesion' };
+  var h = hojaObras_(), v = h.getDataRange().getValues(), fila = -1;
+  for (var i = 1; i < v.length; i++) if (String(v[i][0]) === String(d.id)) { fila = i + 1; break; }
+  if (fila < 0) return { ok: false, error: 'No se encontró la obra' };
+  if (d.estado !== undefined) {
+    if (ESTADOS.indexOf(d.estado) < 0) return { ok: false, error: 'Estado no válido' };
+    h.getRange(fila, 3).setValue(d.estado);
+  }
+  if (d.precio !== undefined) h.getRange(fila, 11).setValue(Math.max(0, Number(d.precio) || 0) || '');
+  if (d.titulo !== undefined && limpioTexto_(d.titulo, 80)) h.getRange(fila, 4).setValue(hoja_(limpioTexto_(d.titulo, 80)));
+  if (d.artista !== undefined && limpioTexto_(d.artista, 80)) h.getRange(fila, 5).setValue(hoja_(limpioTexto_(d.artista, 80)));
+  h.getRange(fila, 13).setValue(new Date());
+  CacheService.getScriptCache().remove('catalogo');
+  return { ok: true };
+}
+
+function medida_(v) { var n = Number(v); return (n >= 1 && n <= 600) ? Math.round(n * 10) / 10 : 0; }
+function hoja_(s) { return /^[=+\-@]/.test(s) ? "'" + s : s; }
 
 // ---------- Shopify: conexión ----------
 function conectarShopify() {
@@ -206,7 +308,8 @@ function publicar_(d) {
 }
 
 // ---------- web app ----------
-function doGet() {
+function doGet(e) {
+  if (e && e.parameter && e.parameter.catalogo) return json_(catalogoPublico_());
   return json_({ ok: true, servicio: 'creamdo-panel' });
 }
 
@@ -217,6 +320,9 @@ function doPost(e) {
     if (d.accion === 'entrar') return json_(entrar_(d));
     if (d.accion === 'integrar') return json_(integrar_(d));
     if (d.accion === 'publicar') return json_(publicar_(d));
+    if (d.accion === 'guardarObra') return json_(guardarObra_(d));
+    if (d.accion === 'listarObras') return json_(listarObras_(d));
+    if (d.accion === 'cambiarObra') return json_(cambiarObra_(d));
     return json_({ ok: false, error: 'Acción desconocida' });
   } catch (err) {
     console.error(err);

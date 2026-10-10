@@ -9,7 +9,7 @@
 
   // ---------- navegación ----------
   function ir(paso) {
-    ['entrar', 'foto', 'esquinas', 'medidas', 'sala', 'resultado'].forEach(function (p) {
+    ['entrar', 'foto', 'esquinas', 'medidas', 'sala', 'resultado', 'objeto', 'obras'].forEach(function (p) {
       $('p-' + p).classList.toggle('visible', p === paso);
     });
     window.scrollTo(0, 0);
@@ -34,7 +34,7 @@
     b.disabled = true; b.textContent = 'Comprobando…'; err.classList.add('oculto');
     llamar({ accion: 'entrar', clave: $('clave').value }).then(function (r) {
       if (!r.ok) throw new Error(r.error || 'No se pudo entrar');
-      guardarToken(r.token); $('clave').value = ''; $('b-salir').classList.remove('oculto');
+      guardarToken(r.token); $('clave').value = ''; $('b-salir').classList.remove('oculto'); $('b-ver-obras').classList.remove('oculto');
       ir(E.obra ? 'sala' : 'foto');
     }).catch(function (e) {
       err.textContent = e.message === 'Failed to fetch' ? 'No hay conexión con el servidor. Inténtalo de nuevo.' : e.message;
@@ -267,7 +267,7 @@
     E.escenas = E.escenas.filter(function (x) { return x.sala !== E.sala.id; });
     E.escenas.push({ sala: E.sala.id, nombre: E.sala.nombre, lienzo: E.final });
     if (E.escenas.length > 3) E.escenas.shift();
-    prepararShopify();
+    prepararCatalogo();
     ir('resultado');
   }
   function nombreArchivo() {
@@ -290,60 +290,127 @@
   $('b-otra-sala').addEventListener('click', function () { ir('sala'); });
   $('b-nueva').addEventListener('click', function () {
     E.foto = E.obra = E.obraRecta = E.montaje = E.final = null;
-    ['ancho', 'alto', 'titulo', 'artista', 'sh-titulo', 'sh-artista', 'sh-precio', 'sh-tecnica'].forEach(function (id) { $(id).value = ''; });
+    ['ancho', 'alto', 'titulo', 'artista', 'cat-titulo', 'cat-artista', 'cat-precio', 'cat-tecnica'].forEach(function (id) { $(id).value = ''; });
     E.escenas = []; E.enviada = false;
     ir('foto');
   });
 
-  // ---------- enviar a Shopify ----------
-  function prepararShopify() {
-    $('shopify').classList.toggle('oculto', !API);
-    if (!$('sh-titulo').value) $('sh-titulo').value = $('titulo').value;
-    if (!$('sh-artista').value) $('sh-artista').value = $('artista').value;
-    var n = E.escenas.length;
-    $('sh-cuenta').textContent = 'Se enviarán la foto de la obra y ' + (n === 1 ? 'esta imagen en sala.' : 'las ' + n + ' imágenes en sala que has generado.');
-    limpiar('sh-avisos');
-    $('b-shopify').disabled = E.enviada; $('b-shopify').textContent = E.enviada ? 'Ya está en Shopify' : 'Enviar a Shopify como borrador';
-  }
+  // ---------- guardar en el catálogo ----------
   function jpeg(lienzo, maximo) {
     var k = Math.min(1, maximo / Math.max(lienzo.width, lienzo.height));
     var c = k < 1 ? I.escalar(lienzo, lienzo.width * k, lienzo.height * k) : lienzo;
-    return c.toDataURL('image/jpeg', 0.9).split(',')[1];
+    return c.toDataURL('image/jpeg', 0.88).split(',')[1];
   }
-  $('b-shopify').addEventListener('click', function () {
-    var titulo = $('sh-titulo').value.trim(), artista = $('sh-artista').value.trim(), b = $('b-shopify');
-    limpiar('sh-avisos');
-    if (!titulo || !artista) { aviso('sh-avisos', 'Escribe el título y el artista.', 'grave'); return; }
+  function prepararCatalogo() {
+    $('catalogo').classList.toggle('oculto', !API);
+    if (!$('cat-titulo').value) $('cat-titulo').value = $('titulo').value;
+    if (!$('cat-artista').value) $('cat-artista').value = $('artista').value;
+    var n = E.escenas.length;
+    $('cat-cuenta').textContent = 'Se guardarán la foto de la obra y ' + (n === 1 ? 'esta imagen en sala.' : 'las ' + n + ' imágenes en sala que has generado.');
+    limpiar('cat-avisos'); botonGuardar($('b-catalogo'), E.enviada);
+  }
+  function botonGuardar(b, hecho) { b.disabled = hecho; b.textContent = hecho ? 'Ya está en el catálogo' : 'Guardar en el catálogo'; }
+  function enviarObra(datos, avisos, boton, alTerminar) {
+    limpiar(avisos);
+    if (!datos.titulo || !datos.artista) { aviso(avisos, 'Escribe el título y el artista.', 'grave'); return; }
+    if (!datos.altoCm) { aviso(avisos, 'Escribe al menos el alto en centímetros.', 'grave'); return; }
     if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
-    b.disabled = true; b.textContent = 'Enviando…';
-    var imagenes = [{ datos: jpeg(E.obra, 2000), alt: titulo + ', de ' + artista }];
-    E.escenas.forEach(function (x) { imagenes.push({ datos: jpeg(x.lienzo, 2600), alt: titulo + ' en ' + x.nombre.toLowerCase() + ' (imagen referencial)' }); });
-    llamar({ accion: 'publicar', token: E.token, titulo: titulo, artista: artista, tipoObra: $('sh-tipo').value, tecnica: $('sh-tecnica').value,
-             precio: parseFloat($('sh-precio').value) || 0, anchoCm: E.medidas[0], altoCm: E.medidas[1], sala: E.sala.id, imagenes: imagenes })
-      .then(function (r) {
-        if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
-        E.enviada = true;
-        var d = document.createElement('div'); d.className = 'aviso bien';
-        d.appendChild(document.createTextNode('"' + r.titulo + '" ya está en Shopify como borrador. '));
-        if (/^https:\/\/admin\.shopify\.com\//.test(r.enlace || '')) {
-          var a = document.createElement('a'); a.href = r.enlace; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Abrir en Shopify'; d.appendChild(a);
-        }
-        $('sh-avisos').appendChild(d);
-        if (r.aviso) aviso('sh-avisos', r.aviso);
-      })
-      .catch(function (e) {
-        if (e.sesion) { guardarToken(null); ir('entrar'); return; }
-        aviso('sh-avisos', e.message === 'Failed to fetch' ? 'No hay conexión con el servidor. Inténtalo de nuevo.' : e.message, 'grave');
-      })
-      .then(function () { b.disabled = E.enviada; b.textContent = E.enviada ? 'Ya está en Shopify' : 'Enviar a Shopify como borrador'; });
+    boton.disabled = true; boton.textContent = 'Guardando…';
+    datos.accion = 'guardarObra'; datos.token = E.token;
+    var hecho = false;
+    llamar(datos).then(function (r) {
+      if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
+      hecho = true;
+      aviso(avisos, '"' + r.titulo + '" quedó guardada ' + (r.estado === 'Publicada' ? 'y publicada en la web.' : 'como borrador. Publícala desde "Obras" cuando quieras.'), 'bien');
+      if (alTerminar) alTerminar();
+    }).catch(function (e) {
+      if (e.sesion) { guardarToken(null); ir('entrar'); return; }
+      aviso(avisos, e.message === 'Failed to fetch' ? 'No hay conexión con el servidor. Inténtalo de nuevo.' : e.message, 'grave');
+    }).then(function () { botonGuardar(boton, hecho); });
+  }
+  $('b-catalogo').addEventListener('click', function () {
+    var titulo = $('cat-titulo').value.trim(), artista = $('cat-artista').value.trim();
+    var imagenes = [{ datos: jpeg(E.obra, 1800) }];
+    E.escenas.forEach(function (x) { imagenes.push({ datos: jpeg(x.lienzo, 2200) }); });
+    enviarObra({ titulo: titulo, artista: artista, tipoObra: $('cat-tipo').value, tecnica: $('cat-tecnica').value, precio: parseFloat($('cat-precio').value) || 0,
+                 anchoCm: E.medidas[0], altoCm: E.medidas[1], estado: $('cat-publicar').checked ? 'Publicada' : 'Borrador', imagenes: imagenes },
+               'cat-avisos', $('b-catalogo'), function () { E.enviada = true; });
   });
+
+  // ---------- esculturas y objetos: fotos tal cual, sin sala ----------
+  var objFotos = [];
+  $('archivos-obj').addEventListener('change', function () {
+    var fs = Array.prototype.slice.call(this.files || [], 0, 4); this.value = '';
+    if (!fs.length) return;
+    var err = $('foto-error'); err.classList.add('oculto');
+    Promise.all(fs.map(function (f) {
+      var url = URL.createObjectURL(f);
+      return cargarImagen(url).then(function (img) {
+        var k = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = I.lienzo(img.naturalWidth * k, img.naturalHeight * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url); return c;
+      });
+    })).then(function (ls) {
+      objFotos = ls; var cont = $('obj-fotos'); cont.textContent = '';
+      ls.forEach(function (c) { var im = document.createElement('img'); im.src = c.toDataURL('image/jpeg', 0.6); im.alt = ''; cont.appendChild(im); });
+      limpiar('obj-avisos'); botonGuardar($('b-obj-guardar'), false);
+      if (ls.some(function (c) { return I.nitidez(c) < NITIDEZ_MINIMA; })) aviso('obj-avisos', 'Alguna foto parece movida o desenfocada.');
+      ir('objeto');
+    }).catch(function () { err.textContent = 'No se pudo abrir alguna de las fotos.'; err.classList.remove('oculto'); });
+  });
+  $('b-obj-atras').addEventListener('click', function () { ir('foto'); });
+  $('b-obj-guardar').addEventListener('click', function () {
+    enviarObra({ titulo: $('obj-titulo').value.trim(), artista: $('obj-artista').value.trim(), tipoObra: $('obj-tipo').value, tecnica: $('obj-tecnica').value,
+                 precio: parseFloat($('obj-precio').value) || 0, altoCm: parseFloat($('obj-alto').value) || 0, anchoCm: parseFloat($('obj-ancho').value) || 0,
+                 fondoCm: parseFloat($('obj-fondo').value) || 0, estado: $('obj-publicar').checked ? 'Publicada' : 'Borrador',
+                 imagenes: objFotos.map(function (c) { return { datos: jpeg(c, 1800) }; }) },
+               'obj-avisos', $('b-obj-guardar'), function () {
+                 ['obj-titulo', 'obj-precio', 'obj-tecnica', 'obj-alto', 'obj-ancho', 'obj-fondo'].forEach(function (id) { $(id).value = ''; });
+               });
+  });
+
+  // ---------- lista de obras ----------
+  function foto(id, ancho) { return 'https://drive.google.com/thumbnail?id=' + encodeURIComponent(id) + '&sz=w' + ancho; }
+  function cargarObras() {
+    if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
+    ir('obras'); limpiar('obras-avisos'); $('obras-lista').textContent = 'Cargando…';
+    llamar({ accion: 'listarObras', token: E.token }).then(function (r) {
+      if (!r.ok) throw new Error(r.error || 'error');
+      var cont = $('obras-lista'); cont.textContent = '';
+      if (!r.obras.length) { cont.textContent = 'Todavía no hay obras guardadas.'; return; }
+      r.obras.forEach(function (o) {
+        var d = document.createElement('div'); d.className = 'obra';
+        var im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; if (o.imagenes[0]) im.src = foto(o.imagenes[0], 200);
+        var t = document.createElement('div'), b = document.createElement('b'), s = document.createElement('small');
+        b.textContent = o.titulo; s.textContent = o.artista + ' · ' + o.tipo + (o.altoCm ? ' · ' + o.altoCm + (o.anchoCm ? ' x ' + o.anchoCm : '') + ' cm' : '');
+        var fila = document.createElement('div'); fila.className = 'dos';
+        var est = document.createElement('select'); ['Borrador', 'Publicada', 'Vendida', 'Oculta'].forEach(function (e) { var op = document.createElement('option'); op.textContent = e; est.appendChild(op); });
+        est.value = o.estado; est.setAttribute('aria-label', 'Estado de ' + o.titulo);
+        var pr = document.createElement('input'); pr.type = 'number'; pr.min = 0; pr.step = 1; pr.inputMode = 'decimal'; pr.placeholder = 'Precio $'; pr.value = o.precio || ''; pr.setAttribute('aria-label', 'Precio de ' + o.titulo);
+        function cambiar(campo, valor) {
+          var datos = { accion: 'cambiarObra', token: E.token, id: o.id }; datos[campo] = valor;
+          limpiar('obras-avisos');
+          llamar(datos).then(function (x) { if (!x.ok) throw new Error(x.error); aviso('obras-avisos', 'Guardado: ' + o.titulo, 'bien'); })
+            .catch(function (e) { aviso('obras-avisos', 'No se pudo guardar el cambio. ' + (e.message || ''), 'grave'); });
+        }
+        est.addEventListener('change', function () { cambiar('estado', est.value); });
+        pr.addEventListener('change', function () { cambiar('precio', parseFloat(pr.value) || 0); });
+        fila.appendChild(est); fila.appendChild(pr); t.appendChild(b); t.appendChild(s); t.appendChild(fila); d.appendChild(im); d.appendChild(t); cont.appendChild(d);
+      });
+    }).catch(function (e) {
+      if (e.message === 'sesion') { guardarToken(null); ir('entrar'); return; }
+      $('obras-lista').textContent = ''; aviso('obras-avisos', 'No se pudieron cargar las obras.', 'grave');
+    });
+  }
+  $('b-ver-obras').addEventListener('click', cargarObras);
+  $('b-obras-nueva').addEventListener('click', function () { ir('foto'); });
 
   // ---------- arranque ----------
   var guardado = null; try { guardado = sessionStorage.getItem('creamdo'); } catch (e) {}
   if (!API) {
     $('cabecera').textContent = 'Obra en sala · sin IA'; ir('foto');
   } else if (tokenVigente(guardado)) {
-    E.token = guardado; $('b-salir').classList.remove('oculto'); ir('foto');
+    E.token = guardado; $('b-salir').classList.remove('oculto'); $('b-ver-obras').classList.remove('oculto'); ir('foto');
   } else {
     ir('entrar');
   }
