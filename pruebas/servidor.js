@@ -3,15 +3,21 @@ const http=require('http'),fs=require('fs'),path=require('path');
 const raiz=path.join(__dirname,'..');const tipos={'.html':'text/html; charset=utf-8','.js':'text/javascript','.jpg':'image/jpeg','.png':'image/png','.css':'text/css','.json':'application/json','.woff2':'font/woff2','.svg':'image/svg+xml'};
 let escena='gemini-A.png';
 http.createServer((q,r)=>{
+  if(q.url==='/reiniciar'){globalThis.pedidas=[];globalThis.obras=[];return r.end('ok');}
+  if(q.url==='/pedidas'){r.setHeader('Content-Type','application/json');return r.end(JSON.stringify({pedidas:globalThis.pedidas||[],obras:globalThis.obras||[]}));}
   if(q.url.startsWith('/api')){let b='';q.on('data',d=>b+=d);q.on('end',()=>{let j={};try{j=JSON.parse(b)}catch(e){}
     r.setHeader('Content-Type','application/json');r.setHeader('Access-Control-Allow-Origin','*');
     if(j.accion==='entrar')return r.end(JSON.stringify(j.clave==='prueba123'?{ok:true,token:(globalThis.tk=(Date.now()+3600e3)+'.abc')}:{ok:false,error:'Clave incorrecta'}));
     if(j.accion==='integrar'){if(j.token!==globalThis.tk)return r.end(JSON.stringify({ok:false,error:'sesion'}));
+      globalThis.pedidas=globalThis.pedidas||[];globalThis.pedidas.push({tipo:j.tipo,mueble:j.mueble,altoCm:j.altoCm});
+      if(j.tipo==='mascara'||j.tipo==='entorno'){const pieza=/cubos/i.test(j.titulo||'')?'cubos':'caja';
+        if(/sinsala/i.test(j.titulo||'')&&j.tipo==='entorno')return r.end(JSON.stringify({ok:false,error:'La IA no devolvió una imagen (código 500)'}));
+        return r.end(JSON.stringify({ok:true,mime:'image/jpeg',imagen:fs.readFileSync(path.join(__dirname,'esc-'+pieza+(j.tipo==='mascara'?'-mascara':'-sala')+'.jpg')).toString('base64'),quedan:30}));}
       const f=j.sala==='penthouse'?'gemini-B.png':j.sala==='comedor'?'gemini-D.png':'gemini-A.png';
       return r.end(JSON.stringify({ok:true,mime:'image/png',imagen:fs.readFileSync(path.join(__dirname,f)).toString('base64'),quedan:39}));}
     globalThis.obras=globalThis.obras||[];
     if(['guardarObra','listarObras','cambiarObra'].includes(j.accion)&&j.token!==globalThis.tk)return r.end(JSON.stringify({ok:false,error:'sesion'}));
-    if(j.accion==='guardarObra'){const o={id:'o'+globalThis.obras.length,estado:j.estado,titulo:j.titulo,artista:j.artista,tipo:j.tipoObra,tecnica:j.tecnica,anchoCm:j.anchoCm,altoCm:j.altoCm,fondoCm:j.fondoCm||0,precio:j.precio,imagenes:j.imagenes.map((x,n)=>'idfalso'+n+'xxxxxxxx'),_tam:j.imagenes.map(x=>x.datos.length)};globalThis.obras.push(o);
+    if(j.accion==='guardarObra'){const o={id:'o'+globalThis.obras.length,estado:j.estado,titulo:j.titulo,artista:j.artista,tipo:j.tipoObra,tecnica:j.tecnica,anchoCm:j.anchoCm,altoCm:j.altoCm,fondoCm:j.fondoCm||0,precio:j.precio,imagenes:j.imagenes.map((x,n)=>'idfalso'+n+'xxxxxxxx'),_tam:j.imagenes.map(x=>x.datos.length),_enSala:j.enSala||0};globalThis.obras.push(o);
       return r.end(JSON.stringify({ok:true,id:o.id,estado:o.estado,titulo:o.titulo}));}
     if(j.accion==='listarObras')return r.end(JSON.stringify({ok:true,obras:globalThis.obras.slice().reverse()}));
     if(j.accion==='cambiarObra'){const o=globalThis.obras.find(x=>x.id===j.id);if(!o)return r.end(JSON.stringify({ok:false,error:'No se encontró la obra'}));if(j.estado!==undefined)o.estado=j.estado;if(j.precio!==undefined)o.precio=j.precio;return r.end(JSON.stringify({ok:true}));}

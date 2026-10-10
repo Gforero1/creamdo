@@ -105,7 +105,7 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     </ol>
     <label class="boton acento" for="archivo" id="l-archivo">Tomar o elegir foto</label>
     <input type="file" id="archivo" accept="image/*">
-    <label class="boton otro" for="archivos-obj">Escultura u objeto, sin sala</label>
+    <label class="boton otro" for="archivos-obj">Escultura u objeto</label>
     <input type="file" id="archivos-obj" accept="image/*" multiple>
     <div id="foto-error" class="aviso grave oculto"></div>
   </section>
@@ -126,6 +126,16 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
       <div><label for="obj-ancho">Ancho (cm)</label><input type="number" id="obj-ancho" inputmode="decimal" min="1" max="600" step="0.5"></div>
       <div><label for="obj-fondo">Fondo (cm)</label><input type="number" id="obj-fondo" inputmode="decimal" min="1" max="600" step="0.5"></div>
     </div>
+    <h2>Verla <em>en una sala</em></h2>
+    <p class="nota">Se usa la primera foto. La pieza no se toca: solo cambia lo que tiene alrededor. Hace falta el alto en centímetros, con la base incluida.</p>
+    <label for="obj-mueble">Sobre qué la ponemos</label>
+    <select id="obj-mueble"><option value="consola">Consola de madera oscura</option><option value="aparador">Aparador de madera clara</option><option value="pedestal">Pedestal blanco</option></select>
+    <div id="amb-avisos"></div>
+    <div class="marco oculto" id="amb-marco"><canvas id="c-amb"></canvas></div>
+    <p class="nota oculto" id="amb-nota"></p>
+    <div id="amb-espera" class="aviso oculto">Preparando la imagen. Tarda alrededor de un minuto; no cierres la página.</div>
+    <button id="b-ambientar" class="otro">Ambientar la pieza</button>
+    <button id="b-amb-quitar" class="enlace oculto">No usar esta imagen</button>
     <label class="casilla"><input type="checkbox" id="obj-publicar"> Publicarla ya en la web</label>
     <div id="obj-avisos"></div>
     <button id="b-obj-guardar" class="acento">Guardar en el catálogo</button>
@@ -213,9 +223,9 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
 
   <footer>Uso interno de Creamdo Art. <button class="enlace oculto" id="b-salir" style="padding:0;font-size:12.5px">Cerrar sesión</button></footer>
 </main>
-<script src="../config.js"></script>
-<script src="salas.js"></script>
-<script src="imagen.js"></script>
-<script src="app.js"></script>
+<script src="../config.js?v=6"></script>
+<script src="salas.js?v=6"></script>
+<script src="imagen.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>

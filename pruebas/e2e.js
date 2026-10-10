@@ -10,6 +10,7 @@ const visible=(p,id)=>p.evaluate(i=>document.getElementById(i).classList.contain
 const textoAvisos=(p,id)=>p.evaluate(i=>document.getElementById(i).innerText,id);
 
 // --- 1. obra con foto limpia ---
+await fetch('http://localhost:8765/reiniciar');
 let p=await nueva('http://localhost:8765/api');
 t('arranca en acceso',await visible(p,'p-entrar'));
 await p.fill('#clave','mala');await p.click('#b-entrar');await p.waitForSelector('#entrar-error:not(.oculto)');

@@ -8,7 +8,7 @@
 
 var MODELO = 'gemini-nano-banana-2.1';
 var TAMANO = '2K';
-var LIMITE_DIARIO = 40;            // imágenes por día, para acotar el gasto
+var LIMITE_DIARIO = 60;            // imágenes por día, para acotar el gasto
 var HORAS_SESION = 12;
 var FALLOS_MAX = 8;                // intentos de clave antes de bloquear
 var MINUTOS_BLOQUEO = 10;
@@ -27,8 +27,30 @@ var INSTRUCCIONES = {
     'the soft shadow the canvas casts on the wall, a thin visible canvas edge, and matching grain and sharpness. ' +
     'Strict rules: do NOT move, resize, rotate, crop or reframe the painting; do NOT add a frame; ' +
     'do NOT change anything painted on the canvas; do NOT change the room, furniture, window, plants or camera framing. ' +
-    'Output the same image, same aspect ratio and composition, just naturally integrated.'
+    'Output the same image, same aspect ratio and composition, just naturally integrated.',
+  // Esculturas y objetos, llamada 1: la silueta. Con ella el panel recorta la pieza real y comprueba la llamada 2.
+  mascara: 'Return this exact photo with one change: paint everything that is NOT the main art object in the centre of the photo with flat pure green #00FF00. ' +
+    'The object INCLUDES the base, plinth or stand that belongs to it (the block it is mounted on): keep that too. ' +
+    'The table, shelf or furniture underneath that base, the walls, windows, plants, other objects and any gap or hole where the background shows through the object must all become green. ' +
+    'Do NOT move, resize, rotate, redraw, recolor or relight the object: its pixels must stay exactly where they are. Same framing and aspect ratio.'
 };
+// Esculturas y objetos, llamada 2: solo cambia el entorno. El mueble sale de esta lista y la altura es un número ya validado.
+var MUEBLES = {
+  consola: 'a dark tropical-hardwood console table',
+  aparador: 'a light natural-wood sideboard',
+  pedestal: 'a plain white gallery plinth standing on a polished terracotta tile floor'
+};
+function instruccionEntorno_(mueble, altoCm) {
+  return 'Edit this photo. Keep the main art object in the centre of the photo, together with the base or stand that belongs to it, EXACTLY as it is: ' +
+    'same pixels, same position, same size, same angle, same colours and the same light on it. ' +
+    'Replace everything else (the furniture it stands on, walls, windows, plants, other objects, and anything seen through gaps or holes in the object) with a new setting: ' +
+    'the object now stands on ' + mueble + ' against a plain off-white plaster wall in a bright apartment on the Venezuelan Caribbean coast, soft daylight from the left, calm and uncluttered, ' +
+    'nothing else on the furniture, a palm leaf entering at one edge of the frame. ' +
+    'Real size matters: the object with its base is ' + altoCm + ' cm tall. Draw the furniture and the room at the true scale for an object of that height ' +
+    '(a console or sideboard top is about 80 cm above the floor and 40 cm deep, a gallery plinth is about 100 cm tall), never larger or smaller to flatter it. ' +
+    'The new furniture and room must follow the same camera height, angle and perspective as the original photo so the object sits naturally on the surface, with a realistic contact shadow and a soft cast shadow. ' +
+    'Do NOT redraw, restyle, simplify, crop, move, resize or relight the object or its base. Same framing and aspect ratio. Photorealistic photograph.';
+}
 
 // ---------- menú de la hoja ----------
 function onOpen() {
@@ -401,7 +423,14 @@ function integrar_(d) {
   var claveGemini = p.getProperty('GEMINI_API_KEY');
   if (!claveGemini) return { ok: false, error: 'Falta la clave de Gemini en la hoja' };
 
-  var instruccion = INSTRUCCIONES[d.tipo];
+  var instruccion = null;
+  if (d.tipo === 'entorno') {
+    var alto = medida_(d.altoCm);
+    if (!alto || !Object.prototype.hasOwnProperty.call(MUEBLES, d.mueble)) return { ok: false, error: 'Faltan el alto de la pieza o el mueble' };
+    instruccion = instruccionEntorno_(MUEBLES[d.mueble], alto);
+  } else if (Object.prototype.hasOwnProperty.call(INSTRUCCIONES, d.tipo)) {
+    instruccion = INSTRUCCIONES[d.tipo];
+  }
   if (!instruccion) return { ok: false, error: 'Tipo de obra no admitido' };
   var imagen = String(d.imagen || '');
   if (!/^[A-Za-z0-9+/=]+$/.test(imagen) || imagen.length < 1000 || imagen.length > MAX_IMAGEN_B64) {

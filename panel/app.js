@@ -337,8 +337,12 @@
                'cat-avisos', $('b-catalogo'), function () { E.enviada = true; });
   });
 
-  // ---------- esculturas y objetos: fotos tal cual, sin sala ----------
-  var objFotos = [];
+  // ---------- esculturas y objetos ----------
+  var objFotos = [], amb = null;   // amb: { lienzo, enSala } la imagen ambientada o de estudio
+  function quitarAmbiente() {
+    amb = null; ['amb-marco', 'amb-nota', 'b-amb-quitar'].forEach(function (id) { $(id).classList.add('oculto'); }); limpiar('amb-avisos');
+    $('b-ambientar').textContent = 'Ambientar la pieza';
+  }
   $('archivos-obj').addEventListener('change', function () {
     var fs = Array.prototype.slice.call(this.files || [], 0, 4); this.value = '';
     if (!fs.length) return;
@@ -353,7 +357,7 @@
     })).then(function (ls) {
       objFotos = ls; var cont = $('obj-fotos'); cont.textContent = '';
       ls.forEach(function (c) { var im = document.createElement('img'); im.src = c.toDataURL('image/jpeg', 0.6); im.alt = ''; cont.appendChild(im); });
-      limpiar('obj-avisos'); botonGuardar($('b-obj-guardar'), false);
+      limpiar('obj-avisos'); botonGuardar($('b-obj-guardar'), false); quitarAmbiente();
       if (ls.some(function (c) { return I.nitidez(c) < NITIDEZ_MINIMA; })) aviso('obj-avisos', 'Alguna foto parece movida o desenfocada.');
       ir('objeto');
     }).catch(function () { err.textContent = 'No se pudo abrir alguna de las fotos.'; err.classList.remove('oculto'); });
@@ -363,10 +367,64 @@
     enviarObra({ titulo: $('obj-titulo').value.trim(), artista: $('obj-artista').value.trim(), tipoObra: $('obj-tipo').value, tecnica: $('obj-tecnica').value,
                  precio: parseFloat($('obj-precio').value) || 0, altoCm: parseFloat($('obj-alto').value) || 0, anchoCm: parseFloat($('obj-ancho').value) || 0,
                  fondoCm: parseFloat($('obj-fondo').value) || 0, estado: $('obj-publicar').checked ? 'Publicada' : 'Borrador',
-                 imagenes: objFotos.map(function (c) { return { datos: jpeg(c, 1800) }; }) },
+                 imagenes: imagenesObjeto(), enSala: amb && amb.enSala ? 1 : 0 },
                'obj-avisos', $('b-obj-guardar'), function () {
                  ['obj-titulo', 'obj-precio', 'obj-tecnica', 'obj-alto', 'obj-ancho', 'obj-fondo'].forEach(function (id) { $(id).value = ''; });
                });
+  });
+  // Orden en la web: si hay sala, fotos reales primero y la sala al final (lleva el rótulo de imagen referencial).
+  // Si solo se pudo limpiar el fondo, esa va primero: es la pieza real y hace mejor portada.
+  function imagenesObjeto() {
+    var reales = objFotos.map(function (c) { return { datos: jpeg(c, 1800) }; });
+    if (!amb) return reales;
+    var extra = { datos: jpeg(amb.lienzo, 2200) };
+    return amb.enSala ? reales.concat([extra]) : [extra].concat(reales);
+  }
+  function pedirImagen(datos) {
+    datos.accion = 'integrar'; datos.token = E.token; datos.titulo = $('obj-titulo').value; datos.artista = $('obj-artista').value;
+    return llamar(datos).then(function (r) {
+      if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
+      return cargarImagen('data:' + (r.mime || 'image/png') + ';base64,' + r.imagen);
+    }).then(function (img) { var c = I.lienzo(img.naturalWidth, img.naturalHeight); c.getContext('2d').drawImage(img, 0, 0); return c; });
+  }
+  function mostrarAmbiente(lienzo, enSala, nota) {
+    amb = { lienzo: lienzo, enSala: enSala };
+    var c = $('c-amb'); c.width = lienzo.width; c.height = lienzo.height; c.getContext('2d').drawImage(lienzo, 0, 0);
+    $('amb-nota').textContent = nota;
+    ['amb-marco', 'amb-nota', 'b-amb-quitar'].forEach(function (id) { $(id).classList.remove('oculto'); });
+    $('b-ambientar').textContent = 'Probar otra vez';
+    botonGuardar($('b-obj-guardar'), false);
+  }
+  $('b-amb-quitar').addEventListener('click', quitarAmbiente);
+  $('b-ambientar').addEventListener('click', function () {
+    limpiar('amb-avisos');
+    var alto = parseFloat($('obj-alto').value) || 0;
+    if (!objFotos.length) return;
+    if (!(alto >= 1 && alto <= 600)) { aviso('amb-avisos', 'Escribe primero el alto de la pieza en centímetros, con la base incluida.', 'grave'); $('obj-alto').focus(); return; }
+    if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
+    var original = objFotos[0], b64 = jpeg(original, 1800), boton = $('b-ambientar');
+    boton.disabled = true; $('amb-espera').classList.remove('oculto');
+    // Dos peticiones a la vez: la silueta de la pieza y la sala. La sala puede fallar sin que se pierda la silueta.
+    var sala = pedirImagen({ tipo: 'entorno', imagen: b64, mueble: $('obj-mueble').value, altoCm: alto }).catch(function (e) { if (e.sesion) throw e; return null; });
+    Promise.all([pedirImagen({ tipo: 'mascara', imagen: b64 }), sala]).then(function (r) {
+      var sil = I.silueta(original, r[0]);
+      E.verificacionObjeto = { silueta: sil.parecido || 0, area: sil.area || 0 };
+      if (!sil.ok) {
+        quitarAmbiente();
+        aviso('amb-avisos', 'No se pudo separar la pieza del fondo en esta foto. Prueba con una foto de la pieza sola, delante de una pared lisa. Mientras tanto se guarda con las fotos tal cual.', 'grave');
+        return;
+      }
+      var v = r[1] ? I.verificarEntorno(original, r[1], sil) : { ok: false, parecido: 0, trozosMalos: 1 };
+      E.verificacionObjeto.escena = v.parecido; E.verificacionObjeto.trozosMalos = v.trozosMalos;
+      if (v.ok) {
+        mostrarAmbiente(I.pegarPieza(r[1], original, sil), true, 'Imagen referencial. La pieza es la de tu foto, sin cambios; la sala es una recreación.');
+      } else {
+        mostrarAmbiente(I.estudio(original, sil), false, 'La sala cambiaba la pieza, así que no se usa. Queda la pieza real sobre un fondo limpio. Puedes probar otra vez o con otro mueble.');
+      }
+    }).catch(function (e) {
+      if (e.sesion) { guardarToken(null); ir('entrar'); return; }
+      aviso('amb-avisos', (e.message === 'Failed to fetch' ? 'No hay conexión con el servidor.' : e.message) + ' Puedes intentarlo otra vez o guardar la pieza con las fotos tal cual.', 'grave');
+    }).then(function () { boton.disabled = false; $('amb-espera').classList.add('oculto'); });
   });
 
   // ---------- lista de obras ----------

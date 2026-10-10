@@ -354,9 +354,121 @@
     return sal;
   }
 
+  // ---------- esculturas y objetos ----------
+  // La IA devuelve la foto con el fondo en verde. De ahí sale la silueta; los píxeles de la pieza
+  // se toman siempre de la foto original, nunca de lo que devuelve la IA.
+  var ANCHO_TRABAJO = 768;
+  function aTrabajo(c, w, h) { return escalar(c, w, h); }
+  function correlacion(a, b, dentro) {
+    var n = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+    for (var i = 0; i < a.length; i++) if (dentro[i]) { n++; sa += a[i]; sb += b[i]; saa += a[i] * a[i]; sbb += b[i] * b[i]; sab += a[i] * b[i]; }
+    if (n < 30) return 0;
+    var va = saa - sa * sa / n, vb = sbb - sb * sb / n;
+    return (va < 1e-3 || vb < 1e-3) ? 0 : (sab - sa * sb / n) / Math.sqrt(va * vb);
+  }
+  function mismaForma(a, b) { return Math.abs(a.width / a.height - b.width / b.height) < 0.03 * (a.width / a.height); }
+  function silueta(original, mascara) {
+    if (!mismaForma(original, mascara)) return { ok: false, motivo: 'forma' };
+    var w = Math.min(ANCHO_TRABAJO, original.width), h = Math.round(w * original.height / original.width), n = w * h;
+    var m = ctx2d(aTrabajo(mascara, w, h)).getImageData(0, 0, w, h).data;
+    var a = new Float32Array(n), bin = new Uint8Array(n), i, j;
+    for (i = 0, j = 0; i < n; i++, j += 4) {
+      var verde = m[j + 1] - Math.max(m[j], m[j + 2]);
+      a[i] = Math.min(1, Math.max(0, (150 - verde) / 110)); bin[i] = a[i] > 0.5 ? 1 : 0;
+    }
+    // la pieza es la mancha conectada más grande que no es verde
+    var etiqueta = new Int32Array(n), pila = new Int32Array(n), mejor = 0, mejorArea = 0, actual = 0;
+    for (i = 0; i < n; i++) {
+      if (!bin[i] || etiqueta[i]) continue;
+      actual++; var tope = 0, area = 0; pila[tope++] = i; etiqueta[i] = actual;
+      while (tope) {
+        var p = pila[--tope], x = p % w; area++;
+        if (x > 0 && bin[p - 1] && !etiqueta[p - 1]) { etiqueta[p - 1] = actual; pila[tope++] = p - 1; }
+        if (x < w - 1 && bin[p + 1] && !etiqueta[p + 1]) { etiqueta[p + 1] = actual; pila[tope++] = p + 1; }
+        if (p >= w && bin[p - w] && !etiqueta[p - w]) { etiqueta[p - w] = actual; pila[tope++] = p - w; }
+        if (p < n - w && bin[p + w] && !etiqueta[p + w]) { etiqueta[p + w] = actual; pila[tope++] = p + w; }
+      }
+      if (area > mejorArea) { mejorArea = area; mejor = actual; }
+    }
+    var parte = mejorArea / n;
+    if (parte < 0.02 || parte > 0.8) return { ok: false, motivo: 'tamano', area: parte };
+    var pieza = new Float32Array(n), x0 = w, x1 = 0, y0 = h, y1 = 0;
+    for (i = 0; i < n; i++) if (etiqueta[i] === mejor) {
+      pieza[i] = 1; var px = i % w, py = (i / w) | 0;
+      if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py;
+    }
+    // núcleo: la pieza sin su borde, para comparar sin que cuente el fondo
+    var suave = desenfocar(new Float32Array(pieza), w, h, 3), nucleo = new Uint8Array(n), alfa = new Float32Array(n);
+    for (i = 0; i < n; i++) nucleo[i] = suave[i] > 0.97 ? 1 : 0;
+    var borde = desenfocar(new Float32Array(pieza), w, h, 1);
+    for (i = 0; i < n; i++) alfa[i] = Math.min(1, Math.max(0, (borde[i] - 0.45) / 0.4)) * Math.min(1, a[i] * 1.6) * (suave[i] > 0.02 ? 1 : 0);
+    var go = desenfocar(gris(aTrabajo(original, w, h)), w, h, 1), gm = desenfocar(gris(aTrabajo(mascara, w, h)), w, h, 1);
+    var parecido = correlacion(go, gm, nucleo);
+    return { ok: parecido >= 0.75, motivo: parecido >= 0.75 ? '' : 'movida', w: w, h: h, alfa: alfa, nucleo: nucleo, gris: go,
+             caja: [x0, y0, x1, y1], area: parte, parecido: parecido };
+  }
+  // ¿La escena conserva la pieza donde estaba y como era? Se mide entera y por trozos:
+  // un solo trozo redibujado basta para descartarla.
+  function verificarEntorno(original, escena, sil) {
+    if (!mismaForma(original, escena)) return { ok: false, motivo: 'forma', parecido: 0, trozosMalos: 1 };
+    var w = sil.w, h = sil.h, ge = desenfocar(gris(aTrabajo(escena, w, h)), w, h, 1);
+    var parecido = correlacion(sil.gris, ge, sil.nucleo);
+    var c = sil.caja, N = 8, total = 0, malos = 0;
+    for (var fi = 0; fi < N; fi++) for (var co = 0; co < N; co++) {
+      var xa = c[0] + ((c[2] - c[0] + 1) * co / N | 0), xb = c[0] + ((c[2] - c[0] + 1) * (co + 1) / N | 0);
+      var ya = c[1] + ((c[3] - c[1] + 1) * fi / N | 0), yb = c[1] + ((c[3] - c[1] + 1) * (fi + 1) / N | 0);
+      var n = 0, sa = 0, sb = 0, saa = 0, sbb = 0, sab = 0;
+      for (var y = ya; y < yb; y++) for (var x = xa; x < xb; x++) {
+        var i = y * w + x; if (!sil.nucleo[i]) continue;
+        var p = sil.gris[i], q = ge[i]; n++; sa += p; sb += q; saa += p * p; sbb += q * q; sab += p * q;
+      }
+      if (n < 40) continue;
+      var va = saa / n - (sa / n) * (sa / n), vb = sbb / n - (sb / n) * (sb / n);
+      total++;
+      if (va < 16) { if (Math.abs(sa - sb) / n > 45) malos++; continue; }   // trozo liso: se compara el tono
+      var r = vb < 1e-3 ? 0 : (sab / n - (sa / n) * (sb / n)) / Math.sqrt(va * vb);
+      if (r < 0.5) malos++;
+    }
+    var parteMala = total ? malos / total : 1;
+    return { ok: parecido >= 0.75 && parteMala <= 0.1, motivo: parecido < 0.75 ? 'cambiada' : (parteMala > 0.1 ? 'trozos' : ''),
+             parecido: parecido, trozosMalos: parteMala };
+  }
+  function capaPieza(original, sil, w, h) {
+    // La pieza real con su silueta como transparencia, al tamaño pedido.
+    var ma = lienzo(sil.w, sil.h), mc = ctx2d(ma), im = mc.createImageData(sil.w, sil.h);
+    for (var i = 0, j = 0; i < sil.alfa.length; i++, j += 4) { im.data[j] = im.data[j + 1] = im.data[j + 2] = 0; im.data[j + 3] = Math.round(sil.alfa[i] * 255); }
+    mc.putImageData(im, 0, 0);
+    var capa = lienzo(w, h), cc = ctx2d(capa);
+    cc.imageSmoothingQuality = 'high'; cc.drawImage(original, 0, 0, w, h);
+    cc.globalCompositeOperation = 'destination-in'; cc.drawImage(ma, 0, 0, w, h);
+    return capa;
+  }
+  // Escena de la IA con la pieza real pegada encima, en su mismo sitio.
+  function pegarPieza(escena, original, sil) {
+    var sal = lienzo(escena.width, escena.height), s = ctx2d(sal);
+    s.drawImage(escena, 0, 0); s.drawImage(capaPieza(original, sil, sal.width, sal.height), 0, 0);
+    return sal;
+  }
+  // Sin IA en el resultado: la pieza real sobre un fondo liso de estudio.
+  function estudio(original, sil) {
+    var k = original.width / sil.w, c = sil.caja;
+    var pw = (c[2] - c[0] + 1) * k, ph = (c[3] - c[1] + 1) * k, margen = Math.max(pw, ph) * 0.22;
+    var W = Math.round(pw + margen * 2), H = Math.round(ph + margen * 2.2);
+    if (W / H > 0.8) H = Math.round(W / 0.8); else W = Math.round(H * 0.8);
+    var sal = lienzo(W, H), s = ctx2d(sal), g = s.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, '#EDEBE6'); g.addColorStop(0.6, '#E4E2DC'); g.addColorStop(1, '#CFCDC6');   // fondo continuo, sin línea de mesa
+    s.fillStyle = g; s.fillRect(0, 0, W, H);
+    var dx = Math.round((W - pw) / 2 - c[0] * k), dy = Math.round(H * 0.86 - ph - c[1] * k);
+    s.save(); s.filter = 'blur(' + Math.round(pw * 0.05) + 'px)'; s.fillStyle = 'rgba(0,0,0,.28)';
+    s.beginPath(); s.ellipse(W / 2, H * 0.86 - ph * 0.01, pw * 0.5, pw * 0.07, 0, 0, Math.PI * 2); s.fill(); s.restore();
+    s.drawImage(capaPieza(original, sil, original.width, original.height), dx, dy);
+    return sal;
+  }
+
   window.Imagen = {
     lienzo: lienzo, escalar: escalar, nitidez: nitidez, quemado: quemado, enderezar: enderezar, tocaBorde: tocaBorde,
     gananciaPared: gananciaPared, corregir: corregir, cuadroEnSala: cuadroEnSala, multiplicar: multiplicar,
-    montar: montar, localizar: localizar, repegar: repegar
+    montar: montar, localizar: localizar, repegar: repegar,
+    silueta: silueta, verificarEntorno: verificarEntorno, pegarPieza: pegarPieza, estudio: estudio
   };
 })();

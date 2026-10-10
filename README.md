@@ -20,6 +20,21 @@ Sale del logo de la marca, no de una plantilla:
 - **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.
 - **Textos:** los de la galería (bio de Instagram y tienda anterior) y datos reales de cada obra.
 
+## Panel: esculturas y objetos
+
+Una escultura no se puede enderezar con cuatro esquinas, así que va por otro camino. La regla es la misma: **la pieza nunca la dibuja la IA**.
+
+1. La dueña sube la foto, escribe el alto real (con base) y elige el mueble: consola, aparador o pedestal.
+2. El panel pide dos imágenes a la vez a Gemini:
+   - **Silueta:** la misma foto con todo lo que no es la pieza pintado de verde.
+   - **Entorno:** la misma foto con la pieza intacta y solo lo de alrededor cambiado por una sala. El texto lleva el alto real para que el mueble salga a escala; el mueble sale de una lista fija del backend.
+3. El navegador comprueba la silueta contra la foto (misma posición) y luego la sala contra la foto dentro de la silueta, entera y en 64 trozos. Con las pruebas reales: una pieza respetada da 0,87 de parecido y ningún trozo malo; una redibujada da 0 y todos malos. Umbral: 0,75 y como mucho 10 % de trozos malos.
+4. Si pasa, se pegan encima los píxeles de la foto original: la pieza no cambia de tamaño ni de sitio. Si no pasa, la sala se descarta y queda la pieza real sobre un fondo liso. Si ni la silueta es fiable, se guardan las fotos tal cual.
+
+La escala del mueble respecto a la pieza la decide la IA a partir del alto que se le da; es lo único que no se puede medir. Por eso esa imagen sale en la web como "Imagen referencial".
+
+Pruebas: `node pruebas/esculturas.js` (usa salidas reales de Gemini guardadas como archivos).
+
 ## Panel: obra en sala
 
 Panel privado de Creamdo Art. Se sube la foto de una pintura, se marcan sus esquinas y sus medidas,
