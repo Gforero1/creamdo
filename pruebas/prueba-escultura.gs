@@ -1,30 +1,26 @@
 
 // ---------- PRUEBA TEMPORAL (no forma parte del backend publicado) ----------
+var COMUN_ESC = 'Photorealistic interior photograph, vertical 3:4 portrait format, shot with a 50mm lens from standing eye level looking very slightly down. ' +
+  'A bright apartment on the Venezuelan Caribbean coast: off-white plaster wall, soft natural daylight coming from a window on the left, calm and uncluttered. ' +
+  'The surface must be completely EMPTY: no vases, no books, no sculptures, no objects of any kind on it. No art on the wall, no people, no text. ';
 var PRUEBAS_ESC = {
-  mascara: 'Return this exact photo with one change: paint everything that is NOT the two stacked-cube metal sculptures ' +
-    '(the red one and the blue one) and their black square bases with flat pure green #00FF00. ' +
-    'That includes the wicker wall, the wooden shelf, the frame on the left AND every gap or hole between and inside the cubes where the background shows through. ' +
-    'Do NOT move, resize, rotate, redraw, recolor or relight the sculptures or their bases: their pixels must stay exactly where they are. Same framing and aspect ratio.',
-  escena: 'Take the two stacked-cube metal sculptures (one red, one blue, each on a black square base) from this photo and show them ' +
-    'standing on a dark wood console table against a plain off-white wall in a bright Venezuelan coastal apartment, soft daylight from a window on the left, ' +
-    'a hint of tropical plant at the edge of the frame. Photorealistic interior photograph, vertical. ' +
-    'Strict rules: the sculptures must be the SAME objects: same number of cubes, same shapes and openings, same colours, same glossy finish, same bases, ' +
-    'same viewing angle and same position relative to each other. Do not redesign, simplify, straighten or add anything to them. Only the surroundings change, ' +
-    'plus natural contact shadows and reflections on the table.'
+  consola: COMUN_ESC + 'Subject: a dark tropical-hardwood console table, 120 cm wide and 80 cm tall, standing against the wall, seen frontally so its front edge is perfectly horizontal. ' +
+    'The whole table top is visible and empty and sits in the lower third of the frame, with a lot of plain wall above it. A palm leaf enters the frame slightly at the right edge.',
+  pedestal: COMUN_ESC + 'Subject: one white gallery plinth (a plain square pedestal, 35 cm wide and 100 cm tall) standing on a polished terracotta tile floor about 40 cm in front of the wall, centred in the frame. ' +
+    'Its empty top surface is slightly visible and sits just below the middle of the frame, with plain wall above it. A rattan armchair is partly visible, out of focus, at the left edge.'
 };
 function pruebaEscultura() {
   var clave = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
-  var foto = Utilities.base64Encode(UrlFetchApp.fetch('https://raw.githubusercontent.com/Gforero1/creamdo-panel/89a8bf57f885a5dc9ea4fc798aaa357a5c9afc2b/pruebas/muestras/escultura-cubos.jpg').getBlob().getBytes());
   var carpeta = carpetaFotos_(), salida = {};
   Object.keys(PRUEBAS_ESC).forEach(function (k) {
     var resp = UrlFetchApp.fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
       method: 'post', contentType: 'application/json', headers: { 'x-goog-api-key': clave }, muteHttpExceptions: true,
-      payload: JSON.stringify({ model: MODELO, input: [{ type: 'text', text: PRUEBAS_ESC[k] }, { type: 'image', mime_type: 'image/jpeg', data: foto }], response_format: { type: 'image', image_size: TAMANO } })
+      payload: JSON.stringify({ model: MODELO, input: [{ type: 'text', text: PRUEBAS_ESC[k] }], response_format: { type: 'image', image_size: TAMANO } })
     });
     var img = null; try { img = buscarImagen_(JSON.parse(resp.getContentText())); } catch (e) {}
     if (!img) { salida[k] = 'error ' + resp.getResponseCode() + ' ' + resp.getContentText().slice(0, 200); return; }
-    var blob = Utilities.newBlob(Utilities.base64Decode(img.data), img.mime, 'prueba-escultura-' + k);
-    salida[k] = Drive.Files.create({ name: 'prueba-escultura-' + k, parents: [carpeta] }, blob, { fields: 'id' }).id;
+    var blob = Utilities.newBlob(Utilities.base64Decode(img.data), img.mime, 'prueba-plantilla-' + k);
+    salida[k] = Drive.Files.create({ name: 'prueba-plantilla-' + k, parents: [carpeta] }, blob, { fields: 'id' }).id;
   });
   console.log('RESULTADO_PRUEBA ' + JSON.stringify(salida));
 }
