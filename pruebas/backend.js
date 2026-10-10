@@ -41,7 +41,12 @@ t('entorno: tipo heredado no cuela',post({accion:'integrar',token:e.token,tipo:'
 const en=post({accion:'integrar',token:e.token,tipo:'entorno',mueble:'aparador',altoCm:'40.26',imagen:img});
 t('entorno: lleva el mueble de la lista y el alto real',en.ok&&txt().includes('light natural-wood sideboard')&&txt().includes('is 40.3 cm tall'));
 const ma=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img});t('máscara: pide la base incluida',ma.ok&&txt().includes('INCLUDES the base'));}
+{const cr=[];ctx.Drive={Files:{create:(m,b)=>{cr.push(m);return{id:'tmp'+cr.length+'xxxxxxxxxxxx'}},list:()=>({files:[{id:'viejo1'}]}),update:(m,id)=>{cr.push({papelera:id})}},Permissions:{create:()=>{}}};ctx.Utilities.base64Decode=s=>[1];ctx.Utilities.newBlob=()=>({});
+const im=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img});
+t('imagen: va a la carpeta temporal y la respuesta es pequeña',im.ok&&/^tmp/.test(im.archivo)&&im.imagen===undefined&&props.CARPETA_TEMPORAL&&JSON.stringify(im).length<200);
+t('temporal: lo viejo va a la papelera',cr.some(x=>x.papelera==='viejo1'));delete ctx.Drive;}
 {const antes=llamadas.length,pid='abcdef0123456789abcdef01';
+
 const r1=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img,pid}),r2=post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img,pid});
 t('repetida con el mismo pid: no vuelve a llamar a Gemini',r1.ok&&r2.ok&&r2.imagen===r1.imagen&&llamadas.length===antes+1);
 t('pid sin sesión no devuelve lo recordado',post({accion:'integrar',tipo:'mascara',imagen:img,pid}).error==='sesion');

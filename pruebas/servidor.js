@@ -17,6 +17,7 @@ http.createServer((q,r)=>{
       globalThis.pedidas=globalThis.pedidas||[];globalThis.pedidas.push({tipo:j.tipo,mueble:j.mueble,altoCm:j.altoCm});
       if(j.tipo==='mascara'||j.tipo==='entorno'){const pieza=/cubos/i.test(j.titulo||'')?'cubos':'caja';
         if(/sinsala/i.test(j.titulo||'')&&j.tipo==='entorno')return r.end(JSON.stringify({ok:false,error:'La IA no devolvió una imagen (código 500)'}));
+        if(/pierde/i.test(j.titulo||''))return r.end(JSON.stringify({ok:true,archivo:'esc-'+pieza+(j.tipo==='mascara'?'-mascara':'-sala'),quedan:30}));
         return r.end(JSON.stringify({ok:true,mime:'image/jpeg',imagen:fs.readFileSync(path.join(__dirname,'esc-'+pieza+(j.tipo==='mascara'?'-mascara':'-sala')+'.jpg')).toString('base64'),quedan:30}));}
       const f=j.sala==='penthouse'?'gemini-B.png':j.sala==='comedor'?'gemini-D.png':'gemini-A.png';
       return r.end(JSON.stringify({ok:true,mime:'image/png',imagen:fs.readFileSync(path.join(__dirname,f)).toString('base64'),quedan:39}));}

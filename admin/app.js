@@ -28,6 +28,7 @@
 
   // Google a veces ejecuta la petición pero no entrega la respuesta (llega la portada del servicio o una página).
   // Entonces se repite la misma petición con el mismo "pid": el backend devuelve lo que ya hizo, sin repetirlo.
+  var alRepetir = null;
   function pidNuevo() {
     var a = new Uint8Array(16); (window.crypto || window.msCrypto).getRandomValues(a);
     return Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
@@ -45,9 +46,9 @@
   }
   function llamar(datos) {
     if (datos.accion !== 'entrar') datos.pid = pidNuevo();
-    var quedan = 2;
+    var quedan = 2, intento = 1;
     function probar() {
-      return unIntento(datos).catch(function (e) { if (e.perdida && quedan-- > 0) return probar(); throw e; });
+      return unIntento(datos).catch(function (e) { if (e.perdida && quedan-- > 0) { intento++; if (alRepetir) alRepetir(intento); return probar(); } throw e; });
     }
     return probar();
   }
@@ -257,7 +258,7 @@
              titulo: $('titulo').value, artista: $('artista').value, anchoCm: E.medidas[0], altoCm: E.medidas[1] })
       .then(function (r) {
         if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
-        return cargarImagen('data:' + (r.mime || 'image/png') + ';base64,' + r.imagen);
+        return recogerImagen(r);
       })
       .then(function (img) {
         var escena = I.lienzo(img.naturalWidth, img.naturalHeight); escena.getContext('2d').drawImage(img, 0, 0);
@@ -404,11 +405,28 @@
     var extra = { datos: jpeg(amb.lienzo, 2200) };
     return amb.enSala ? reales.concat([extra]) : [extra].concat(reales);
   }
+  // La imagen hecha por la IA llega como un archivo de Drive (r.archivo) y se baja aparte, con permiso para leer sus píxeles.
+  // Recién subida puede tardar unos segundos en estar disponible: se reintenta.
+  function recogerImagen(r) {
+    if (!r.archivo) return cargarImagen('data:' + (r.mime || 'image/png') + ';base64,' + r.imagen);
+    var base = (window.CREAMDO && window.CREAMDO.IMAGEN) || 'https://lh3.googleusercontent.com/d/{id}=w2400', intentos = 0;
+    function una() {
+      return new Promise(function (ok, mal) {
+        var im = new Image(); im.crossOrigin = 'anonymous';
+        im.onload = function () { ok(im); }; im.onerror = function () { mal(new Error('La imagen se hizo pero no se pudo descargar. Inténtalo otra vez.')); };
+        im.src = base.replace('{id}', encodeURIComponent(r.archivo)) + (intentos ? '?r=' + intentos : '');
+      }).catch(function (e) {
+        if (++intentos >= 8) throw e;
+        return new Promise(function (ok) { setTimeout(ok, 2500); }).then(una);
+      });
+    }
+    return una();
+  }
   function pedirImagen(datos) {
     datos.accion = 'integrar'; datos.token = E.token; datos.titulo = $('obj-titulo').value; datos.artista = $('obj-artista').value;
     return llamar(datos).then(function (r) {
       if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
-      return cargarImagen('data:' + (r.mime || 'image/png') + ';base64,' + r.imagen);
+      return recogerImagen(r);
     }).then(function (img) { var c = I.lienzo(img.naturalWidth, img.naturalHeight); c.getContext('2d').drawImage(img, 0, 0); return c; });
   }
   function mostrarAmbiente(lienzo, enSala, nota) {
@@ -419,6 +437,23 @@
     $('b-ambientar').textContent = 'Probar otra vez';
     botonGuardar($('b-obj-guardar'), false);
   }
+  // Progreso de verdad: qué paso va, cuánto lleva y si hubo que repetir una petición.
+  var PASOS_AMB = ['Enviar la foto', 'Separar la pieza del fondo', 'Crear la sala alrededor', 'Comprobar que la pieza no cambió'], relojAmb = null;
+  function progreso(n, nota) {
+    var caja = $('amb-espera'), lista = $('amb-pasos');
+    if (n < 0) { clearInterval(relojAmb); relojAmb = null; caja.classList.add('oculto'); return; }
+    caja.classList.remove('oculto'); lista.textContent = '';
+    PASOS_AMB.forEach(function (t, i) {
+      var li = document.createElement('li'); li.className = i < n ? 'hecho' : (i === n ? 'ahora' : '');
+      li.textContent = t; if (i === n) { var s = document.createElement('span'); s.id = 'amb-tiempo'; li.appendChild(s); }
+      lista.appendChild(li);
+    });
+    $('amb-nota-paso').textContent = nota || '';
+    var inicio = Date.now(); clearInterval(relojAmb);
+    function tic() { var s = Math.floor((Date.now() - inicio) / 1000), e = $('amb-tiempo'); if (e) e.textContent = ' · ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+    tic(); relojAmb = setInterval(tic, 1000);
+  }
+  alRepetir = function (intento) { $('amb-nota-paso').textContent = 'La respuesta no llegó. Se vuelve a pedir, sin repetir el trabajo (intento ' + intento + ' de 3).'; };
   $('b-amb-quitar').addEventListener('click', quitarAmbiente);
   [].forEach.call(document.querySelectorAll('#obj-muebles button'), function (b) {
     b.addEventListener('click', function () {
@@ -433,16 +468,15 @@
     if (!(alto >= 1 && alto <= 600)) { aviso('amb-avisos', 'Escribe primero el alto de la pieza en centímetros, con la base incluida.', 'grave'); $('obj-alto').focus(); return; }
     if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
     var original = objFotos[0], b64 = jpeg(original, 1800), boton = $('b-ambientar');
-    boton.disabled = true; $('amb-espera').classList.remove('oculto');
-    // Una petición detrás de otra, nunca a la vez: con dos a la vez Google entrega mal una de las respuestas.
-    // Primero la silueta; si la sala falla después, la silueta sirve igual.
-    $('amb-paso').textContent = 'Paso 1 de 2: separando la pieza del fondo.';
+    boton.disabled = true; progreso(1, 'Suele tardar entre uno y dos minutos en total. No cierres ni cambies de página.');
+    // Una petición detrás de otra: primero la silueta; si la sala falla después, la silueta sirve igual.
     pedirImagen({ tipo: 'mascara', imagen: b64 }).then(function (mascara) {
-      $('amb-paso').textContent = 'Paso 2 de 2: creando la sala.';
+      progreso(2, 'La pieza ya está separada. Ahora se dibuja el mueble y la pared.');
       return pedirImagen({ tipo: 'entorno', imagen: b64, mueble: $('obj-mueble').value, altoCm: alto })
         .catch(function (e) { if (e.sesion) throw e; return null; })
         .then(function (sala) { return [mascara, sala]; });
     }).then(function (r) {
+      progreso(3, '');
       var sil = I.silueta(original, r[0]);
       E.verificacionObjeto = { silueta: sil.parecido || 0, area: sil.area || 0 };
       if (!sil.ok) {
@@ -460,7 +494,7 @@
     }).catch(function (e) {
       if (e.sesion) { guardarToken(null); ir('entrar'); return; }
       aviso('amb-avisos', (e.message === 'Failed to fetch' ? 'No hay conexión con el servidor.' : e.message) + ' Puedes intentarlo otra vez o guardar la pieza con las fotos tal cual.', 'grave');
-    }).then(function () { boton.disabled = false; $('amb-espera').classList.add('oculto'); });
+    }).then(function () { boton.disabled = false; progreso(-1); });
   });
 
   // ---------- lista de obras ----------

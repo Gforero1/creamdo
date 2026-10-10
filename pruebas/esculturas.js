@@ -6,6 +6,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium-1194/ch
 const c=await b.newContext({...devices['Pixel 7']});const p=await c.newPage();
 p.on('pageerror',e=>{mal++;console.log('ERROR DE PAGINA',e.message)});
 await p.route('**/config.js*',r=>r.fulfill({contentType:'text/javascript',body:"window.CREAMDO={API:'http://localhost:8765/api'};"}));
+let fallosImg=0;await p.route('https://lh3.googleusercontent.com/d/**',r=>{const id=decodeURIComponent(new URL(r.request().url()).pathname.split('/d/')[1]).split('=')[0];if(id==='esc-caja-mascara'&&fallosImg++<1)return r.abort();r.fulfill({contentType:'image/jpeg',headers:{'access-control-allow-origin':'*'},body:require('fs').readFileSync(id+'.jpg')})});
 await p.goto('http://localhost:8765/admin/');await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-inicio.visible');
 const texto=id=>p.evaluate(i=>document.getElementById(i).innerText,id);
 const veri=()=>p.evaluate(()=>JSON.stringify(Object.fromEntries(Object.entries(__panel.E.verificacionObjeto||{}).map(([k,v])=>[k,Math.round(v*1000)/1000]))));
@@ -60,8 +61,10 @@ await p.click('#b-amb-quitar');t('se puede quitar la imagen',await p.evaluate(()
 // 3b. Google pierde la primera respuesta de cada petición: el admin la repite solo y sale bien
 await p.click('#b-obj-atras');await p.setInputFiles('#archivos-obj',['esc-caja.jpg']);await p.waitForSelector('#p-objeto.visible');
 await p.fill('#obj-titulo','Caja pierde');await p.fill('#obj-artista','Prueba');await p.fill('#obj-alto','40');await p.click('[data-mueble=pedestal]');await p.click('#b-ambientar');
+await p.waitForSelector('#amb-espera:not(.oculto)');t('progreso: lista de pasos con el actual marcado y reloj',await p.locator('#amb-pasos li').count()===4&&await p.locator('#amb-pasos li.ahora').count()===1&&/\d:\d\d/.test(await p.innerText('#amb-tiempo')));await p.screenshot({path:'cap-21-progreso.png'});
 await p.waitForSelector('#amb-marco:not(.oculto)',{timeout:90000});
-e=await estado();t('respuestas perdidas: se repiten solas y la pieza queda en sala',e.perdidas===2&&(await texto('amb-nota')).includes('Imagen referencial'),'perdidas '+e.perdidas);
+e=await estado();t('imagen recogida de Drive, con un fallo de descarga reintentado',fallosImg>=2);
+t('respuestas perdidas: se repiten solas y la pieza queda en sala',e.perdidas===2&&(await texto('amb-nota')).includes('Imagen referencial'),'perdidas '+e.perdidas);
 t('muebles: tres opciones con foto, una elegida',await p.locator('#obj-muebles button img').count()===3&&await p.locator('#obj-muebles [aria-pressed=true]').count()===1&&await p.inputValue('#obj-mueble')==='pedestal');
 await p.screenshot({path:'cap-20-muebles.png',fullPage:true});
 

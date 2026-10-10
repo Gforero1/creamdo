@@ -110,6 +110,22 @@ button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underl
 .fotos-ed button:disabled{opacity:.3}
 .rayas{display:inline-flex;gap:4px;transform:skewX(22deg)}
 .rayas i{display:block;width:6px;height:20px}.rayas i:nth-child(1){background:var(--cian)}.rayas i:nth-child(2){background:var(--naranja)}.rayas i:nth-child(3){background:var(--magenta)}
+.progreso{border:1px solid var(--tinta);padding:16px 16px 12px;margin:0 0 16px}
+.progreso ol{list-style:none;margin:14px 0 8px;padding:0}
+.progreso li{padding:7px 0 7px 30px;position:relative;color:var(--gris);font-size:15px}
+.progreso li::before{content:"";position:absolute;left:4px;top:13px;width:10px;height:10px;border:1px solid var(--linea);border-radius:50%}
+.progreso li.hecho{color:var(--tinta)}
+.progreso li.hecho::before{content:"✓";border:0;top:6px;left:2px;width:auto;height:auto;font-weight:700;color:#0B5E7E}
+.progreso li.ahora{color:var(--tinta);font-weight:650}
+.progreso li.ahora::before{border-color:var(--magenta);background:var(--magenta);animation:late 1s ease-in-out infinite}
+.progreso li span{font-weight:400;color:var(--gris)}
+.progreso p{margin:0;font-size:13.5px;color:var(--gris)}
+.barra-espera{display:flex;gap:6px;height:8px;overflow:hidden}
+.barra-espera i{flex:1;transform-origin:left;animation:corre 1.6s cubic-bezier(.4,0,.2,1) infinite}
+.barra-espera i:nth-child(1){background:var(--cian)}.barra-espera i:nth-child(2){background:var(--naranja);animation-delay:.2s}.barra-espera i:nth-child(3){background:var(--magenta);animation-delay:.4s}
+@keyframes corre{0%{transform:scaleX(0)}50%{transform:scaleX(1);transform-origin:left}51%{transform-origin:right}100%{transform:scaleX(0);transform-origin:right}}
+@keyframes late{50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.barra-espera i,.progreso li.ahora::before{animation:none}}
 .oculto{display:none!important}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
 footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padding-top:12px;margin-top:34px}
@@ -206,7 +222,7 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     <div id="amb-avisos"></div>
     <div class="marco oculto" id="amb-marco"><canvas id="c-amb"></canvas></div>
     <p class="nota oculto" id="amb-nota"></p>
-    <div id="amb-espera" class="aviso oculto"><b id="amb-paso">Paso 1 de 2: separando la pieza del fondo.</b> En total tarda entre uno y dos minutos. No cierres ni cambies de página.</div>
+    <div id="amb-espera" class="progreso oculto" role="status" aria-live="polite"><div class="barra-espera" aria-hidden="true"><i></i><i></i><i></i></div><ol id="amb-pasos"></ol><p id="amb-nota-paso"></p></div>
     <button id="b-ambientar" class="otro">Crear la imagen en sala</button>
     <button id="b-amb-quitar" class="enlace oculto">No usar esta imagen</button>
     <label class="casilla"><input type="checkbox" id="obj-publicar"> Publicarla ya en la web</label>
@@ -329,9 +345,9 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
   <input type="file" id="archivos-obj" accept="image/*" multiple>
   <footer>Uso interno de Creamdo Art. <button class="enlace oculto" id="b-salir" style="padding:0;font-size:12.5px">Cerrar sesión</button></footer>
 </main>
-<script src="../config.js?v=10"></script>
-<script src="salas.js?v=10"></script>
-<script src="imagen.js?v=10"></script>
-<script src="app.js?v=10"></script>
+<script src="../config.js?v=11"></script>
+<script src="salas.js?v=11"></script>
+<script src="imagen.js?v=11"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>

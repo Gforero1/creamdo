@@ -558,7 +558,35 @@ function integrar_(d) {
     console.error('Gemini ' + codigo + ' ' + String(resp.getContentText()).slice(0, 500));
     return { ok: false, error: 'La IA no devolvió una imagen (código ' + codigo + ')' };
   }
-  return { ok: true, mime: img.mime, imagen: img.data, quedan: LIMITE_DIARIO - uso - 1 };
+  // La imagen no viaja en la respuesta: pesa varios megas y Google pierde a menudo las respuestas grandes.
+  // Se deja en una carpeta temporal de Drive y solo se devuelve su identificador.
+  var archivo = guardarTemporal_(img);
+  if (!archivo) return { ok: true, mime: img.mime, imagen: img.data, quedan: LIMITE_DIARIO - uso - 1 };
+  return { ok: true, archivo: archivo, quedan: LIMITE_DIARIO - uso - 1 };
+}
+
+// Carpeta "Creamdo temporal": imágenes recién hechas que el admin recoge para revisarlas. Se vacía sola.
+function guardarTemporal_(img) {
+  try {
+    var p = PropertiesService.getScriptProperties(), carpeta = p.getProperty('CARPETA_TEMPORAL');
+    if (!carpeta) {
+      var c = Drive.Files.create({ name: 'Creamdo temporal (se vacía sola)', mimeType: 'application/vnd.google-apps.folder' }, null, { fields: 'id' });
+      Drive.Permissions.create({ role: 'reader', type: 'anyone' }, c.id);
+      carpeta = c.id; p.setProperty('CARPETA_TEMPORAL', carpeta);
+    }
+    var ext = /png/.test(img.mime) ? 'png' : 'jpg', nombre = 'temporal-' + Date.now().toString(36) + '.' + ext;
+    var id = Drive.Files.create({ name: nombre, parents: [carpeta] }, Utilities.newBlob(Utilities.base64Decode(img.data), img.mime, nombre), { fields: 'id' }).id;
+    limpiarTemporal_(carpeta);
+    return id;
+  } catch (err) { console.warn('No se pudo usar la carpeta temporal: ' + err); return null; }
+}
+// Lo que lleve más de dos horas en la carpeta temporal va a la papelera.
+function limpiarTemporal_(carpeta) {
+  try {
+    var antes = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
+    var viejos = Drive.Files.list({ q: "'" + carpeta + "' in parents and trashed = false and createdTime < '" + antes + "'", fields: 'files(id)', pageSize: 50 }).files || [];
+    viejos.forEach(function (f) { try { Drive.Files.update({ trashed: true }, f.id); } catch (e) {} });
+  } catch (err) { console.warn('No se pudo limpiar la carpeta temporal: ' + err); }
 }
 
 // Recorre la respuesta y se queda con el último bloque de imagen que encuentre.
