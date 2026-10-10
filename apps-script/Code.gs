@@ -157,10 +157,25 @@ function catalogoPublico_() {
   var cache = CacheService.getScriptCache(), g = cache.get('catalogo');
   if (g) return JSON.parse(g);
   var obras = leerObras_().filter(function (o) { return o.estado === 'Publicada' || o.estado === 'Vendida'; }).reverse();
+  obras.forEach(function (o) { o.tecnicaEn = alIngles_(o.tecnica); });
   var r = { ok: true, obras: obras };
   var t = JSON.stringify(r);
   if (t.length < 95000) cache.put('catalogo', t, 120);
   return r;
+}
+
+// Traduce un texto corto al inglés con el traductor de Google y lo recuerda 6 horas.
+// Si el traductor falla, devuelve '' y la web enseña el original.
+function alIngles_(texto) {
+  texto = String(texto || '').trim();
+  if (!texto) return '';
+  var cache = CacheService.getScriptCache(), llave = 'en_' + hex_(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, texto, Utilities.Charset.UTF_8));
+  var g = cache.get(llave);
+  if (g !== null) return g;
+  var en = '';
+  try { en = String(LanguageApp.translate(texto, 'es', 'en') || '').slice(0, 120); } catch (err) { console.warn('Sin traducción: ' + err); return ''; }
+  cache.put(llave, en, 21600);
+  return en;
 }
 
 function guardarObra_(d) {

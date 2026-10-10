@@ -20,6 +20,14 @@ Sale del logo de la marca, no de una plantilla:
 - **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.
 - **Textos:** los de la galería (bio de Instagram y tienda anterior) y datos reales de cada obra.
 
+## Idiomas
+
+La web está en español e inglés. Carga en el idioma del dispositivo (español si el dispositivo está en español, inglés en cualquier otro caso) y recuerda lo que la persona elija con el selector ES / EN.
+
+- Los textos de la web están en los dos idiomas en `tienda.js` (`TEXTOS`). Tono: galería, trato de usted.
+- El tipo de obra se traduce con esa misma tabla. La técnica, que es texto libre, la traduce el backend con el traductor de Google (`alIngles_`, recordada 6 horas) y llega como `tecnicaEn`.
+- Título y artista no se traducen.
+
 ## Admin: editar y destacar
 
 En "Obras", cada obra tiene "Editar": título, artista, tipo, estado, técnica, medidas, precio y fotos (poner otra de portada, quitar, añadir hasta 6). Las fotos quitadas van a la papelera de Drive, no se borran. El backend solo acepta ids de fotos que ya eran de esa obra.

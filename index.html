@@ -42,7 +42,12 @@ header.sitio .ancho{display:flex;justify-content:space-between;align-items:cente
 .marca img{height:46px;width:auto}
 .marca b{font-weight:900;font-stretch:125%;font-size:19px;letter-spacing:.3em;line-height:1;display:block}
 .marca span{font-weight:200;font-size:13px;letter-spacing:.62em;display:block;margin-top:5px}
-nav{display:flex;gap:26px}
+nav{display:flex;gap:10px 26px;align-items:center;flex-wrap:wrap}
+.idiomas{display:inline-flex;gap:2px;border-left:1px solid var(--linea);padding-left:18px}
+@media(max-width:560px){nav{width:100%;gap:8px 16px}nav a{font-size:12px;letter-spacing:.14em}.idiomas{margin-left:auto;border-left:0;padding-left:0}}
+.idiomas button{appearance:none;background:none;border:0;border-bottom:3px solid transparent;cursor:pointer;font:inherit;font-weight:400;font-size:12.5px;letter-spacing:.14em;color:var(--gris);padding:8px 5px}
+.idiomas button[aria-pressed=true]{color:var(--negro);font-weight:650}
+.idiomas button:hover{color:var(--negro)}
 nav a{text-decoration:none;font-weight:650;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;padding:8px 0;border-bottom:3px solid transparent}
 nav a:hover{border-bottom-color:var(--linea)}
 nav a[aria-current=page]{border-bottom-color:var(--negro)}
@@ -89,11 +94,11 @@ main{min-height:60vh}
 .banda .frase{font-weight:300;font-size:clamp(22px,2.6vw,34px);line-height:1.25;max-width:28ch;margin:18px 0 44px}
 .banda ul{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid #3A3A3D}
 @media(min-width:760px){.banda ul{grid-template-columns:repeat(3,1fr);border-top:0;gap:40px}}
-.banda li{padding:16px 0;border-bottom:1px solid #3A3A3D;display:flex;gap:14px;align-items:flex-start}
-@media(min-width:760px){.banda li{border-bottom:0;border-top:1px solid #3A3A3D;flex-direction:column;gap:16px;padding:18px 0 0}}
-.banda li i{display:block;width:8px;height:30px;transform:skewX(var(--inclinacion));flex:none;margin-left:6px}
-.banda li b{display:block;font-weight:600;font-size:17px}
-.banda li span{display:block;color:#B9B9BD;font-size:14.5px;margin-top:3px}
+.banda li{padding:18px 0;border-bottom:1px solid #3A3A3D}
+@media(min-width:760px){.banda li{border-bottom:0;border-top:1px solid #3A3A3D;padding:20px 0 0}}
+.banda li b{display:flex;align-items:center;gap:14px;font-weight:600;font-size:17px}
+.banda li b i{display:block;width:7px;height:20px;transform:skewX(var(--inclinacion));flex:none;margin-left:5px}
+.banda li span{display:block;color:#B9B9BD;font-size:14.5px;margin-top:6px}
 .banda .artistas-cta{display:inline-block;margin-top:44px;font-weight:650;font-size:13px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;border-bottom:3px solid var(--naranja);padding-bottom:6px}
 
 /* artistas */
@@ -121,8 +126,8 @@ dl div{display:grid;grid-template-columns:108px 1fr;gap:10px;padding:12px 0;bord
 dt{font-weight:650;font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gris);padding-top:3px}
 dd{margin:0}
 .precio-grande{font-weight:600;font-size:26px;line-height:1;margin:0 0 22px}
-.boton{display:flex;justify-content:space-between;align-items:center;gap:14px;text-decoration:none;font-weight:650;font-size:13px;letter-spacing:.16em;text-transform:uppercase;padding:19px 22px;background:var(--negro);color:var(--blanco);margin-bottom:14px}
-.boton:hover{background:var(--magenta)}
+.boton{display:flex;justify-content:space-between;align-items:center;gap:14px;text-decoration:none;font-weight:650;font-size:13px;letter-spacing:.16em;text-transform:uppercase;padding:19px 22px;background:var(--negro);color:var(--blanco);border:1px solid var(--negro);transition:background .25s,color .25s;margin-bottom:14px}
+.boton:hover{background:var(--blanco);color:var(--negro)}   /* fondo blanco: las tres rayas siguen viéndose */
 .boton .rayas i{height:20px;width:6px}
 .nota{font-size:13.5px;color:var(--gris);margin:0}
 
@@ -170,6 +175,7 @@ footer .enlaces a:nth-child(1){border-color:var(--cian)}footer .enlaces a:nth-ch
       <a href="#/" id="n-obras">Obras</a>
       <a href="#/artistas" id="n-artistas">Artistas</a>
       <a href="#" id="n-contacto" target="_blank" rel="noopener">WhatsApp</a>
+      <span class="idiomas" role="group" aria-label="Idioma / Language"><button type="button" data-idioma="es" lang="es" aria-label="Español">ES</button><button type="button" data-idioma="en" lang="en" aria-label="English">EN</button></span>
     </nav>
   </div>
 </header>
@@ -178,13 +184,13 @@ footer .enlaces a:nth-child(1){border-color:var(--cian)}footer .enlaces a:nth-ch
   <div class="ancho">
     <img src="marca/logo.png" alt="Creamdo Art" width="560" height="503" loading="lazy">
     <div>
-      <p>Creamdo Art, por Adriana Moncayo.</p>
+      <p id="f-firma">Creamdo Art, por Adriana Moncayo.</p>
       <p>Lechería, Anzoátegui, Venezuela.</p>
       <div class="enlaces"><a href="#" id="f-whatsapp" target="_blank" rel="noopener">WhatsApp</a><a href="#" id="f-instagram" target="_blank" rel="noopener">Instagram</a><a href="https://www.tiktok.com/@creamdo.art" target="_blank" rel="noopener">TikTok</a></div>
     </div>
   </div>
 </footer>
-<script src="config.js?v=7"></script>
-<script src="tienda.js?v=7"></script>
+<script src="config.js?v=9"></script>
+<script src="tienda.js?v=9"></script>
 </body>
 </html>

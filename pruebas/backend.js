@@ -2,7 +2,9 @@
 const fs=require('fs'),crypto=require('crypto'),vm=require('vm');
 const props={},cache={},filas=[];let llamadas=[],respuesta={code:200,body:{steps:[{type:'model_output',content:[{type:'image',mime_type:'image/png',data:'A'.repeat(2000)}]}]}};
 const bytes=b=>Array.from(b).map(x=>x>127?x-256:x);
-const ctx={console:{error(){},log(){}},
+const traducidos=[];
+const ctx={console:{error(){},log(){},warn(){}},
+ LanguageApp:{translate:(t,a,b)=>{traducidos.push(t);if(t==='ROMPE')throw new Error('cuota');return 'EN:'+t}},
  PropertiesService:{getScriptProperties:()=>({getProperty:k=>props[k]||null,setProperty:(k,v)=>{props[k]=v}})},
  CacheService:{getScriptCache:()=>({get:k=>cache[k]||null,put:(k,v)=>{cache[k]=v},remove:k=>{delete cache[k]}})},
  LockService:{getScriptLock:()=>({waitLock(){},releaseLock(){}})},
@@ -111,6 +113,10 @@ console.log(ok+' pruebas bien, '+mal+' mal');
   const r2=post({...base,titulo:'Segunda'});post({accion:'cambiarObra',token:e.token,id:r2.id,destacada:true});
   t3('solo una destacada a la vez',tabla[1][14]===''&&tabla[2][14]==='Sí');
   t3('editar exige sesión',post({accion:'cambiarObra',id:r.id,titulo:'x'}).error==='sesion');
+  delete cache.catalogo;const antesTr=traducidos.length;const cat=JSON.parse(ctx.doGet({parameter:{catalogo:'1'}}).t);
+  t3('catálogo: técnica traducida al inglés',cat.obras.length>0&&cat.obras.every(o=>!o.tecnica||o.tecnicaEn==='EN:'+o.tecnica));
+  delete cache.catalogo;const n1=traducidos.length;ctx.doGet({parameter:{catalogo:'1'}});t3('catálogo: la traducción se recuerda, no se repite',traducidos.length===n1&&n1>0);
+  t3('traductor caído: sigue sirviendo el catálogo',ctx.alIngles_('ROMPE')===''&&ctx.alIngles_('')==='');
   t3('sin alto no guarda',post({...base,altoCm:0}).ok===false);
   t3('guardar exige sesión',post({...base,token:'x'}).error==='sesion');
   console.log('Catálogo: '+ok3+' pruebas bien, '+mal3+' mal');
