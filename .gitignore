@@ -1,0 +1,4 @@
+node_modules/
+pruebas/*.jpg
+pruebas/*.png
+pruebas/package*.json
