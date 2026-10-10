@@ -23,8 +23,18 @@
   function tokenVigente(t) { return !!t && Number(String(t).split('.')[0]) > Date.now() + 60000; }
 
   function llamar(datos) {
-    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos) })
-      .then(function (r) { return r.json(); });
+    // Google a veces tarda o contesta con una página de error (sobre todo recién publicada una versión):
+    // se corta la espera y se da un mensaje claro en vez de un error de JSON.
+    var corte = new AbortController(), reloj = setTimeout(function () { corte.abort(); }, datos.accion === 'integrar' ? 150000 : 45000);
+    return fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(datos), signal: corte.signal })
+      .then(function (r) { return r.text(); })
+      .then(function (t) {
+        var j = null; try { j = JSON.parse(t); } catch (e) {}
+        // una respuesta sin "accion" atendida (la de la portada del servicio) tampoco vale
+        if (!j || typeof j !== 'object' || j.servicio) throw new Error('El servidor no contestó bien. Espera un minuto y vuelve a intentarlo.');
+        return j;
+      }, function (e) { throw new Error(e && e.name === 'AbortError' ? 'El servidor tardó demasiado. Espera un minuto y vuelve a intentarlo.' : 'Failed to fetch'); })
+      .then(function (j) { clearTimeout(reloj); return j; }, function (e) { clearTimeout(reloj); throw e; });
   }
 
   // ---------- entrar ----------
@@ -33,7 +43,7 @@
     var b = $('b-entrar'), err = $('entrar-error');
     b.disabled = true; b.textContent = 'Comprobando…'; err.classList.add('oculto');
     llamar({ accion: 'entrar', clave: $('clave').value }).then(function (r) {
-      if (!r.ok) throw new Error(r.error || 'No se pudo entrar');
+      if (!r.ok || !r.token) throw new Error(r.error || 'No se pudo entrar');
       guardarToken(r.token); $('clave').value = ''; $('b-salir').classList.remove('oculto'); $('b-ver-obras').classList.remove('oculto');
       ir(E.obra ? 'sala' : 'foto');
     }).catch(function (e) {

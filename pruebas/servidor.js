@@ -7,6 +7,8 @@ http.createServer((q,r)=>{
   if(q.url==='/pedidas'){r.setHeader('Content-Type','application/json');return r.end(JSON.stringify({pedidas:globalThis.pedidas||[],obras:globalThis.obras||[],cambios:globalThis.cambios||[]}));}
   if(q.url.startsWith('/api')){let b='';q.on('data',d=>b+=d);q.on('end',()=>{let j={};try{j=JSON.parse(b)}catch(e){}
     r.setHeader('Content-Type','application/json');r.setHeader('Access-Control-Allow-Origin','*');
+    if(j.accion==='entrar'&&j.clave==='html'){r.setHeader('Content-Type','text/html');return r.end('<html><body>Error</body></html>');}
+    if(j.accion==='entrar'&&j.clave==='portada')return r.end(JSON.stringify({ok:true,servicio:'creamdo-admin'}));
     if(j.accion==='entrar')return r.end(JSON.stringify(j.clave==='prueba123'?{ok:true,token:(globalThis.tk=(Date.now()+3600e3)+'.abc')}:{ok:false,error:'Clave incorrecta'}));
     if(j.accion==='integrar'){if(j.token!==globalThis.tk)return r.end(JSON.stringify({ok:false,error:'sesion'}));
       globalThis.pedidas=globalThis.pedidas||[];globalThis.pedidas.push({tipo:j.tipo,mueble:j.mueble,altoCm:j.altoCm});

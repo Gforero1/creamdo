@@ -11,6 +11,10 @@ await p.route('https://drive.google.com/thumbnail**',r=>r.fulfill({contentType:'
 await p.goto('http://localhost:8765/admin/');
 t('marca: logo, tipografía y sin fuentes de Google',await p.evaluate(()=>!!document.querySelector('header.marca img')&&document.querySelector('header.marca i').textContent==='ADMIN'&&!document.querySelector('link[href*=googleapis]'))&&await p.evaluate(()=>document.fonts.ready.then(()=>document.fonts.check('900 20px Archivo'))));
 await p.screenshot({path:'cap-15-admin-entrar.png'});
+await p.fill('#clave','html');await p.click('#b-entrar');await p.waitForSelector('#entrar-error:not(.oculto)');
+t('respuesta que no es JSON: mensaje claro',(await p.innerText('#entrar-error')).includes('no contestó bien'));
+await p.fill('#clave','portada');await p.click('#b-entrar');await p.waitForFunction(()=>document.getElementById('b-entrar').textContent==='Entrar');
+t('respuesta sin token no deja entrar',await p.evaluate(()=>document.getElementById('p-entrar').classList.contains('visible'))&&(await p.innerText('#entrar-error')).includes('no contestó bien'));
 await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSelector('#p-foto.visible');
 await p.screenshot({path:'cap-16-admin-foto.png'});
 // una obra con dos fotos reales y una en sala
