@@ -17,7 +17,7 @@ const abrir=async(dev,lista)=>{const c=await b.newContext({locale:idiomaNav,...(
   await p.goto('http://localhost:8765/');await p.waitForTimeout(900);return p;};
 let p=await abrir(null,obras);
 t('inicio: cuatro obras y una destacada',await p.locator('.pieza').count()===4&&await p.locator('.destacada').count()===1);
-{const sin=await p.locator('.destacada').innerText();t('portada sin marcar: una disponible, con su rótulo',/EN LA GALERÍA AHORA/i.test(sin)&&!sin.includes('Los Canales'));
+{const sin=await p.locator('.destacada').innerText();t('portada sin marcar: una disponible, con su rótulo',/DISPONIBLE AHORA/i.test(sin)&&!sin.includes('Los Canales'));
  const q=await abrir(null,obras.map(o=>o.id==='o2'?{...o,destacada:true}:o));const con=await q.locator('.destacada').innerText();
  t('portada marcada: sale la destacada',/OBRA DESTACADA/i.test(con)&&con.includes('Virgen de Coromoto'));await q.context().close();}
 t('fuente de la marca cargada',await p.evaluate(()=>document.fonts.check('900 20px Archivo')));
@@ -49,7 +49,7 @@ p=await abrir(devices['Pixel 7'],[]);t('catálogo vacío: mensaje y WhatsApp',(a
 {const q=await abrir(null,obras.map(o=>({...o,tecnicaEn:o.tecnica?'Acrylic on canvas':''})));
  t('dispositivo en español: carga en español',await q.evaluate(()=>document.documentElement.lang)==='es'&&(await q.innerText('#n-obras')).toUpperCase()==='OBRAS');
  await q.click('[data-idioma=en]');
- t('cambia a inglés: cabecera, portada y filtros',await q.evaluate(()=>document.documentElement.lang)==='en'&&(await q.innerText('#n-obras')).toUpperCase()==='WORKS'&&(await q.innerText('.portada h1')).includes('gallery in Lechería')&&(await q.locator('.filtros a').allTextContents()).join('|')==='All|Painting|Sacred art');
+ t('cambia a inglés: cabecera, portada y filtros',await q.evaluate(()=>document.documentElement.lang)==='en'&&(await q.innerText('#n-obras')).toUpperCase()==='WORKS'&&(await q.innerText('.portada h1')).includes('exhibits Venezuelan artists')&&(await q.locator('.filtros a').allTextContents()).join('|')==='All|Painting|Sacred art');
  t('inglés: técnica traducida, vendida y precio',(await q.locator('.pieza',{hasText:'Marina'}).first().innerText()).includes('Acrylic on canvas')&&(await q.locator('.pieza',{hasText:'Los Canales'}).innerText()).includes('SOLD')&&(await q.locator('.pieza',{hasText:'Amanecer'}).innerText()).includes('Price on request'));
  await q.goto('http://localhost:8765/#/obra/o1');await q.waitForTimeout(700);await q.waitForSelector('.ficha');
  const dl=await q.locator('dl').innerText(),wa=decodeURIComponent(await q.getAttribute('.boton','href'));

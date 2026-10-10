@@ -33,7 +33,7 @@ Pensado para alguien que no es de ordenadores:
 
 La web está en español e inglés. Carga en el idioma del dispositivo (español si el dispositivo está en español, inglés en cualquier otro caso) y recuerda lo que la persona elija con el selector ES / EN.
 
-- Los textos de la web están en los dos idiomas en `tienda.js` (`TEXTOS`). Tono: galería, trato de usted.
+- Los textos de la web están en los dos idiomas en `tienda.js` (`TEXTOS`). Tono: venta de arte, trato de usted. Creamdo no tiene sala propia: no se presenta como galería física sino como representación y exposiciones itinerantes en Lechería.
 - El tipo de obra se traduce con esa misma tabla. La técnica, que es texto libre, la traduce el backend con el traductor de Google (`alIngles_`, recordada 6 horas) y llega como `tecnicaEn`.
 - Título y artista no se traducen.
 
