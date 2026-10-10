@@ -252,7 +252,7 @@
   function integrar() {
     if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
     limpiar('sala-avisos');
-    $('sala-acciones').classList.add('oculto'); $('espera').classList.remove('oculto');
+    $('sala-acciones').classList.add('oculto'); progreso(1, 'Suele tardar menos de un minuto. No cierres ni cambies de página.', 'esp');
     var b64 = E.montaje.toDataURL('image/jpeg', 0.92).split(',')[1];
     llamar({ accion: 'integrar', token: E.token, tipo: 'pintura', imagen: b64, sala: E.sala.id,
              titulo: $('titulo').value, artista: $('artista').value, anchoCm: E.medidas[0], altoCm: E.medidas[1] })
@@ -261,6 +261,7 @@
         return recogerImagen(r);
       })
       .then(function (img) {
+        progreso(2, '', 'esp');
         var escena = I.lienzo(img.naturalWidth, img.naturalHeight); escena.getContext('2d').drawImage(img, 0, 0);
         // la escena debe conservar la proporción de la sala; si no, la IA cambió el encuadre
         var mismaForma = Math.abs(escena.width / escena.height - E.montaje.width / E.montaje.height) < 0.03;
@@ -277,7 +278,7 @@
         if (e.sesion) { guardarToken(null); ir('entrar'); return; }
         aviso('sala-avisos', (e.message === 'Failed to fetch' ? 'No hay conexión con el servidor.' : e.message) + ' Puedes intentarlo otra vez o usar el montaje sin IA.', 'grave');
       })
-      .then(function () { $('espera').classList.add('oculto'); $('sala-acciones').classList.remove('oculto'); });
+      .then(function () { progreso(-1, '', 'esp'); $('sala-acciones').classList.remove('oculto'); });
   }
 
   // ---------- 5. resultado ----------
@@ -438,22 +439,24 @@
     botonGuardar($('b-obj-guardar'), false);
   }
   // Progreso de verdad: qué paso va, cuánto lleva y si hubo que repetir una petición.
-  var PASOS_AMB = ['Enviar la foto', 'Separar la pieza del fondo', 'Crear la sala alrededor', 'Comprobar que la pieza no cambió'], relojAmb = null;
-  function progreso(n, nota) {
-    var caja = $('amb-espera'), lista = $('amb-pasos');
-    if (n < 0) { clearInterval(relojAmb); relojAmb = null; caja.classList.add('oculto'); return; }
+  var PASOS = { amb: ['Enviar la foto', 'Separar la pieza del fondo', 'Crear la sala alrededor', 'Comprobar que la pieza no cambió'],
+                esp: ['Enviar el montaje', 'Integrar la obra en la sala', 'Comprobar que la obra no cambió'] }, relojes = {}, zonaActiva = 'amb';
+  function progreso(n, nota, zona) {
+    zona = zona || 'amb'; zonaActiva = zona;
+    var caja = $(zona + '-espera'), lista = $(zona + '-pasos');
+    if (n < 0) { clearInterval(relojes[zona]); relojes[zona] = null; caja.classList.add('oculto'); return; }
     caja.classList.remove('oculto'); lista.textContent = '';
-    PASOS_AMB.forEach(function (t, i) {
+    PASOS[zona].forEach(function (t, i) {
       var li = document.createElement('li'); li.className = i < n ? 'hecho' : (i === n ? 'ahora' : '');
-      li.textContent = t; if (i === n) { var s = document.createElement('span'); s.id = 'amb-tiempo'; li.appendChild(s); }
+      li.textContent = t; if (i === n) { var s = document.createElement('span'); s.id = zona + '-tiempo'; li.appendChild(s); }
       lista.appendChild(li);
     });
-    $('amb-nota-paso').textContent = nota || '';
-    var inicio = Date.now(); clearInterval(relojAmb);
-    function tic() { var s = Math.floor((Date.now() - inicio) / 1000), e = $('amb-tiempo'); if (e) e.textContent = ' · ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
-    tic(); relojAmb = setInterval(tic, 1000);
+    $(zona + '-nota-paso').textContent = nota || '';
+    var inicio = Date.now(); clearInterval(relojes[zona]);
+    function tic() { var s = Math.floor((Date.now() - inicio) / 1000), e = $(zona + '-tiempo'); if (e) e.textContent = ' · ' + Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+    tic(); relojes[zona] = setInterval(tic, 1000);
   }
-  alRepetir = function (intento) { $('amb-nota-paso').textContent = 'La respuesta no llegó. Se vuelve a pedir, sin repetir el trabajo (intento ' + intento + ' de 3).'; };
+  alRepetir = function (intento) { $(zonaActiva + '-nota-paso').textContent = 'La respuesta no llegó. Se vuelve a pedir, sin repetir el trabajo (intento ' + intento + ' de 3).'; };
   $('b-amb-quitar').addEventListener('click', quitarAmbiente);
   [].forEach.call(document.querySelectorAll('#obj-muebles button'), function (b) {
     b.addEventListener('click', function () {
