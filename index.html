@@ -4,99 +4,157 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Creamdo Art · Galería en Lechería, Venezuela</title>
-<meta name="description" content="Galería y representación de artistas en Lechería, Venezuela. Pinturas, esculturas y arte sacro, con medidas y precio a la vista.">
+<meta name="description" content="Creamdo Art, por Adriana Moncayo. Galería y representación de artistas en Lechería, Venezuela: pinturas, esculturas y arte sacro con medidas y precio a la vista.">
 <meta property="og:title" content="Creamdo Art">
 <meta property="og:description" content="Galería y representación de artistas en Lechería, Venezuela.">
 <meta property="og:type" content="website">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23201A14'/%3E%3Ctext x='16' y='23' font-family='Georgia,serif' font-size='20' fill='%23F7F4EE' text-anchor='middle'%3EC%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<meta property="og:image" content="marca/logo.png">
+<link rel="icon" type="image/png" href="marca/monograma.png">
+<link rel="preload" href="marca/archivo.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+/* La identidad sale del logo: negro, blanco y tres rayas diagonales (cian, naranja, magenta).
+   Una sola familia, Archivo, usada como en el logotipo: muy gruesa y ancha contra muy fina. */
+@font-face{font-family:Archivo;src:url(marca/archivo.woff2) format("woff2");font-weight:100 900;font-stretch:62% 125%;font-display:swap}
 :root{
-  --fondo:#F7F4EE; --tinta:#201A14; --gris:#6E6457; --linea:#D8CFC0; --terracota:#A9472B; --terracota2:#8C3820;
-  --titulo:"Cormorant Garamond","Iowan Old Style",Georgia,serif; --texto:"Instrument Sans",system-ui,sans-serif;
+  --blanco:#FFFFFF; --negro:#0A0A0B; --gris:#626266; --linea:#E2E2DF; --papel:#F4F4F1;
+  --cian:#009ED8; --naranja:#F26122; --magenta:#EC1163;
+  --inclinacion:-22deg;
 }
 *{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
-body{margin:0;background:var(--fondo);color:var(--tinta);font:16px/1.55 var(--texto)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--blanco);color:var(--negro);font:400 16px/1.55 Archivo,"Helvetica Neue",Arial,sans-serif}
 a{color:inherit}
 img{display:block;max-width:100%}
-.ancho{max-width:1180px;margin:0 auto;padding:0 20px}
-header.sitio{border-bottom:1px solid var(--tinta)}
-header.sitio .ancho{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding-top:22px;padding-bottom:14px;flex-wrap:wrap}
-.marca{font:600 26px/1 var(--titulo);letter-spacing:.16em;text-decoration:none}
-.marca small{font:400 12px/1 var(--texto);letter-spacing:.2em;display:block;margin-top:6px;color:var(--gris)}
-nav{display:flex;gap:22px;font-size:14.5px}
-nav a{text-decoration:none;padding:6px 0;border-bottom:1px solid transparent}
-nav a:hover,nav a[aria-current=page]{border-bottom-color:var(--tinta)}
-a:focus-visible,button:focus-visible{outline:2px solid var(--terracota);outline-offset:3px}
-main{min-height:60vh;padding-bottom:70px}
-.entrada{padding:54px 0 34px;max-width:760px}
-.entrada h1{font:500 clamp(40px,7vw,68px)/1.02 var(--titulo);margin:0 0 16px}
-.entrada h1 em{font-style:italic}
-.entrada p{font-size:17px;color:var(--gris);margin:0;max-width:56ch}
-.filtros{display:flex;gap:6px 18px;flex-wrap:wrap;padding:14px 0;border-top:1px solid var(--linea);border-bottom:1px solid var(--linea);margin-bottom:34px;font-size:14.5px}
-.filtros a{text-decoration:none;color:var(--gris);padding:4px 0}
-.filtros a[aria-current=true]{color:var(--tinta);border-bottom:1px solid var(--tinta)}
-.muro{columns:2;column-gap:22px}
-@media(min-width:760px){.muro{columns:3;column-gap:34px}}
-.pieza{break-inside:avoid;margin:0 0 38px;display:block;text-decoration:none}
-.pieza img{width:100%;height:auto;background:#EBE5D9;min-height:90px}
-.pieza h2{font:500 22px/1.15 var(--titulo);margin:12px 0 2px}
-.pieza p{margin:0;font-size:13.5px;color:var(--gris);line-height:1.45}
-.pieza .precio{color:var(--tinta);margin-top:4px}
-.vendida{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--terracota)}
-.pieza:hover h2{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
-.vacio{padding:60px 0;max-width:54ch}
-.vacio h2{font:500 32px/1.1 var(--titulo);margin:0 0 10px}
-/* ficha de obra */
-.volver{display:inline-block;margin:26px 0 18px;font-size:14px;color:var(--gris);text-decoration:none}
-.volver:hover{color:var(--tinta)}
-.ficha{display:grid;gap:34px}
-@media(min-width:900px){.ficha{grid-template-columns:minmax(0,1.55fr) minmax(280px,1fr);column-gap:56px;row-gap:0;align-items:start}.ficha .primera,.ficha .resto{grid-column:1}.ficha aside{grid-column:2;grid-row:1 / span 2;position:sticky;top:24px}}
-.ficha figure{margin:0 0 26px}
-.ficha figure img{width:100%;height:auto;background:#EBE5D9}
-.ficha figcaption{font-size:12.5px;color:var(--gris);margin-top:8px}
-.ficha h1{font:500 clamp(34px,5vw,50px)/1.04 var(--titulo);margin:0 0 6px}
-.ficha .artista{font:italic 500 23px/1.2 var(--titulo);text-decoration:none;display:inline-block;margin-bottom:22px}
-.ficha .artista:hover{text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
-dl{margin:0 0 26px;border-top:1px solid var(--linea)}
-dl div{display:grid;grid-template-columns:104px 1fr;gap:10px;padding:11px 0;border-bottom:1px solid var(--linea);font-size:15px}
-dt{color:var(--gris)}
-dd{margin:0}
-.precio-grande{font:500 34px/1 var(--titulo);margin:0 0 20px}
-.boton{display:block;text-align:center;text-decoration:none;font:600 16px/1 var(--texto);padding:18px 16px;border-radius:2px;background:var(--terracota);color:#FBF8F2;margin-bottom:12px}
-.boton:hover{background:var(--terracota2)}
-.nota{font-size:13.5px;color:var(--gris);margin:0}
+.ancho{max-width:1240px;margin:0 auto;padding:0 20px}
+@media(min-width:900px){.ancho{padding:0 40px}}
+a:focus-visible,button:focus-visible{outline:3px solid var(--cian);outline-offset:3px}
+.etiqueta{font-weight:650;font-size:12px;letter-spacing:.2em;text-transform:uppercase}
+/* las tres rayas del logo */
+.rayas{display:inline-flex;gap:5px;transform:skewX(var(--inclinacion));vertical-align:middle}
+.rayas i{display:block;width:7px;height:26px}
+.rayas i:nth-child(1){background:var(--cian)}.rayas i:nth-child(2){background:var(--naranja)}.rayas i:nth-child(3){background:var(--magenta)}
+
+header.sitio .ancho{display:flex;justify-content:space-between;align-items:center;gap:14px 24px;padding-top:16px;padding-bottom:16px;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:14px;text-decoration:none}
+.marca img{height:46px;width:auto}
+.marca b{font-weight:900;font-stretch:125%;font-size:19px;letter-spacing:.3em;line-height:1;display:block}
+.marca span{font-weight:200;font-size:13px;letter-spacing:.62em;display:block;margin-top:5px}
+nav{display:flex;gap:26px}
+nav a{text-decoration:none;font-weight:650;font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;padding:8px 0;border-bottom:3px solid transparent}
+nav a:hover{border-bottom-color:var(--linea)}
+nav a[aria-current=page]{border-bottom-color:var(--negro)}
+main{min-height:60vh}
+
+/* portada */
+.portada{display:grid;gap:30px;padding:26px 0 54px;border-top:1px solid var(--negro)}
+.portada h1{margin:0;text-transform:uppercase;line-height:.9}
+.portada h1 b{display:block;white-space:nowrap;font-weight:900;font-stretch:125%;font-size:clamp(38px,11vw,62px);letter-spacing:-.01em}
+@media(min-width:900px){.portada h1 b{font-size:clamp(60px,7.3vw,100px)}}
+.portada h1 span{display:block;font-weight:200;font-stretch:100%;font-size:clamp(30px,6.6vw,82px);letter-spacing:.34em;margin-top:.22em}
+.portada .texto{max-width:44ch;font-size:17px;margin:26px 0 0}
+.portada .rayas{margin-top:30px}.portada .rayas i{width:12px;height:64px}.portada .rayas{gap:9px}
+.destacada{display:block;text-decoration:none;align-self:end}
+.destacada img{width:100%;height:auto;background:var(--papel)}
+.destacada p{margin:10px 0 0;font-size:14px;color:var(--gris)}
+.destacada p b{color:var(--negro);font-weight:650}
+@media(min-width:900px){.portada{grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:56px;padding:40px 0 84px;align-items:end}}
+
+.cabecera-seccion{display:flex;justify-content:space-between;align-items:baseline;gap:10px 30px;flex-wrap:wrap;border-top:1px solid var(--negro);padding:14px 0 30px}
+.cabecera-seccion h2{margin:0;font-weight:900;font-stretch:125%;font-size:clamp(24px,3.4vw,40px);text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.filtros{display:flex;gap:6px 22px;flex-wrap:wrap}
+.filtros a{text-decoration:none;font-weight:650;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gris);padding:5px 0;border-bottom:3px solid transparent}
+.filtros a[aria-current=true]{color:var(--negro);border-bottom-color:var(--magenta)}
+
+/* muro de obras: dos columnas desfasadas, como una pared colgada a mano */
+.muro{display:grid;gap:52px 0;padding-bottom:70px}
+@media(min-width:760px){.muro{grid-template-columns:1fr 1fr;gap:0 64px;align-items:start}.muro .col:nth-child(2){padding-top:110px}}
+.col{display:grid;gap:52px}
+@media(min-width:760px){.col{gap:84px}}
+.pieza{display:block;text-decoration:none}
+.pieza img{width:100%;height:auto;background:var(--papel);min-height:80px}
+.pieza h3{margin:16px 0 3px;font-weight:800;font-stretch:112%;font-size:18px;line-height:1.2;text-transform:uppercase;letter-spacing:.03em}
+.pieza p{margin:0;font-size:14.5px;color:var(--gris);line-height:1.5}
+.pieza .artista{color:var(--negro)}
+.pieza .precio{color:var(--negro);font-weight:650;margin-top:6px}
+.pieza:hover h3{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:5px;text-decoration-color:var(--magenta)}
+.vendida{font-weight:650;font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--magenta);margin-top:6px}
+.vacio{padding:10px 0 80px;max-width:52ch}
+.vacio h3{font-weight:900;font-stretch:125%;font-size:26px;text-transform:uppercase;margin:0 0 10px}
+
+/* qué hacemos: banda negra a todo el ancho */
+.banda{background:var(--negro);color:var(--blanco);margin:0 calc(50% - 50vw);padding:64px calc(50vw - 50%) 70px}
+.banda .frase{font-weight:300;font-size:clamp(24px,3.6vw,44px);line-height:1.18;max-width:24ch;margin:18px 0 44px}
+.banda ul{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid #3A3A3D}
+@media(min-width:760px){.banda ul{grid-template-columns:repeat(4,1fr);border-top:0;gap:28px}}
+.banda li{padding:16px 0;border-bottom:1px solid #3A3A3D;display:flex;gap:14px;align-items:flex-start}
+@media(min-width:760px){.banda li{border-bottom:0;border-top:1px solid #3A3A3D;flex-direction:column;gap:16px;padding:18px 0 0}}
+.banda li i{display:block;width:8px;height:30px;transform:skewX(var(--inclinacion));flex:none;margin-left:6px}
+.banda li b{display:block;font-weight:800;font-stretch:112%;text-transform:uppercase;letter-spacing:.06em;font-size:15px}
+.banda li span{display:block;color:#B9B9BD;font-size:14.5px;margin-top:3px}
+.banda .artistas-cta{display:inline-block;margin-top:44px;font-weight:650;font-size:13px;letter-spacing:.16em;text-transform:uppercase;text-decoration:none;border-bottom:3px solid var(--naranja);padding-bottom:6px}
+
 /* artistas */
-.lista-artistas{list-style:none;margin:0;padding:0;border-top:1px solid var(--tinta)}
+.lista-artistas{list-style:none;margin:0 0 80px;padding:0}
 .lista-artistas li{border-bottom:1px solid var(--linea)}
-.lista-artistas a{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:18px 0;text-decoration:none}
-.lista-artistas b{font:500 clamp(26px,4vw,38px)/1.1 var(--titulo)}
-.lista-artistas span{font-size:13.5px;color:var(--gris);white-space:nowrap}
-.lista-artistas a:hover b{font-style:italic}
-footer{border-top:1px solid var(--tinta);padding:26px 0 40px;font-size:14px;color:var(--gris)}
-footer .ancho{display:flex;justify-content:space-between;gap:14px 30px;flex-wrap:wrap}
-footer a{color:var(--tinta)}
+.lista-artistas a{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:20px 0;text-decoration:none}
+.lista-artistas b{font-weight:900;font-stretch:125%;font-size:clamp(22px,4.2vw,46px);text-transform:uppercase;line-height:1.05;letter-spacing:.01em}
+.lista-artistas span{font-size:13px;color:var(--gris);white-space:nowrap;letter-spacing:.1em;text-transform:uppercase}
+.lista-artistas a:hover b{color:var(--magenta)}
+.titulo-pagina{margin:0;padding:30px 0 34px;border-top:1px solid var(--negro);font-weight:900;font-stretch:125%;font-size:clamp(38px,8vw,96px);text-transform:uppercase;line-height:.95}
+
+/* ficha de obra */
+.volver{display:inline-block;margin:0;padding:18px 0;font-weight:650;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--gris);text-decoration:none}
+.volver:hover{color:var(--negro)}
+.ficha{display:grid;gap:30px;border-top:1px solid var(--negro);padding:26px 0 80px}
+@media(min-width:900px){.ficha{grid-template-columns:minmax(0,1.6fr) minmax(300px,1fr);column-gap:64px;row-gap:0;align-items:start;padding-top:40px}.ficha .primera,.ficha .resto{grid-column:1}.ficha aside{grid-column:2;grid-row:1 / span 2;position:sticky;top:26px}}
+.ficha figure{margin:0 0 30px}
+.ficha figure img{width:100%;height:auto;background:var(--papel)}
+.ficha figcaption{font-size:13px;color:var(--gris);margin-top:9px}
+.ficha h1{margin:0 0 8px;font-weight:900;font-stretch:125%;font-size:clamp(30px,4.6vw,52px);text-transform:uppercase;line-height:1;letter-spacing:.01em;overflow-wrap:anywhere}
+.ficha .artista{display:inline-block;font-weight:300;font-size:22px;text-decoration:none;margin-bottom:26px;border-bottom:1px solid var(--linea)}
+.ficha .artista:hover{border-bottom-color:var(--negro)}
+dl{margin:0 0 28px;border-top:1px solid var(--negro)}
+dl div{display:grid;grid-template-columns:108px 1fr;gap:10px;padding:12px 0;border-bottom:1px solid var(--linea);font-size:15px}
+dt{font-weight:650;font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gris);padding-top:3px}
+dd{margin:0}
+.precio-grande{font-weight:900;font-stretch:125%;font-size:40px;line-height:1;margin:0 0 22px}
+.boton{display:flex;justify-content:space-between;align-items:center;gap:14px;text-decoration:none;font-weight:800;font-stretch:112%;font-size:15px;letter-spacing:.1em;text-transform:uppercase;padding:20px 22px;background:var(--negro);color:var(--blanco);margin-bottom:14px}
+.boton:hover{background:var(--magenta)}
+.boton .rayas i{height:20px;width:6px}
+.nota{font-size:13.5px;color:var(--gris);margin:0}
+
+footer{border-top:1px solid var(--negro)}
+footer .ancho{display:flex;justify-content:space-between;align-items:flex-end;gap:24px 40px;flex-wrap:wrap;padding-top:34px;padding-bottom:44px}
+footer img{width:150px;height:auto}
+footer p{margin:0 0 4px;font-size:14px;color:var(--gris)}
+footer .enlaces{display:flex;gap:22px;margin-top:12px}
+footer .enlaces a{font-weight:650;font-size:12px;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;border-bottom:3px solid var(--negro);padding-bottom:4px}
+footer .enlaces a:nth-child(1){border-color:var(--cian)}footer .enlaces a:nth-child(2){border-color:var(--naranja)}footer .enlaces a:nth-child(3){border-color:var(--magenta)}
 </style>
 </head>
 <body>
 <header class="sitio">
   <div class="ancho">
-    <a class="marca" href="#/">CREAMDO<small>ARTE · LECHERÍA</small></a>
+    <a class="marca" href="#/" aria-label="Creamdo Art, inicio">
+      <img src="marca/monograma.png" alt="" width="480" height="303">
+      <div><b>CREAMDO</b><span>ART</span></div>
+    </a>
     <nav aria-label="Secciones">
       <a href="#/" id="n-obras">Obras</a>
       <a href="#/artistas" id="n-artistas">Artistas</a>
-      <a href="#" id="n-contacto" target="_blank" rel="noopener">Escríbenos</a>
+      <a href="#" id="n-contacto" target="_blank" rel="noopener">WhatsApp</a>
     </nav>
   </div>
 </header>
 <main class="ancho" id="vista" aria-live="polite"></main>
 <footer>
   <div class="ancho">
-    <span>Creamdo Art, por Adriana Moncayo. Lechería, Anzoátegui, Venezuela.</span>
-    <span><a href="#" id="f-whatsapp" target="_blank" rel="noopener">WhatsApp</a> · <a href="#" id="f-instagram" target="_blank" rel="noopener">Instagram</a></span>
+    <img src="marca/logo.png" alt="Creamdo Art" width="560" height="503" loading="lazy">
+    <div>
+      <p>Creamdo Art, por Adriana Moncayo.</p>
+      <p>Lechería, Anzoátegui, Venezuela.</p>
+      <div class="enlaces"><a href="#" id="f-whatsapp" target="_blank" rel="noopener">WhatsApp</a><a href="#" id="f-instagram" target="_blank" rel="noopener">Instagram</a><a href="https://www.tiktok.com/@creamdo.art" target="_blank" rel="noopener">TikTok</a></div>
+    </div>
   </div>
 </footer>
 <script src="config.js"></script>

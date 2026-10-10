@@ -1,6 +1,6 @@
 // Servidor de pruebas: sirve el panel y simula el backend devolviendo salidas reales de Gemini.
 const http=require('http'),fs=require('fs'),path=require('path');
-const raiz=path.join(__dirname,'..');const tipos={'.html':'text/html; charset=utf-8','.js':'text/javascript','.jpg':'image/jpeg','.png':'image/png','.css':'text/css','.json':'application/json'};
+const raiz=path.join(__dirname,'..');const tipos={'.html':'text/html; charset=utf-8','.js':'text/javascript','.jpg':'image/jpeg','.png':'image/png','.css':'text/css','.json':'application/json','.woff2':'font/woff2'};
 let escena='gemini-A.png';
 http.createServer((q,r)=>{
   if(q.url.startsWith('/api')){let b='';q.on('data',d=>b+=d);q.on('end',()=>{let j={};try{j=JSON.parse(b)}catch(e){}

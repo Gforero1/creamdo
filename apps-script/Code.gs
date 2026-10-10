@@ -40,6 +40,8 @@ function onOpen() {
     .addSeparator()
     .addItem('Ver estado', 'verEstado')
     .addItem('Probar la conexión con Shopify', 'probarShopify')
+    .addSeparator()
+    .addItem('Traer obras de la tienda antigua', 'importarObrasIniciales')
     .addToUi();
 }
 
@@ -191,6 +193,49 @@ function cambiarObra_(d) {
 
 function medida_(v) { var n = Number(v); return (n >= 1 && n <= 600) ? Math.round(n * 10) / 10 : 0; }
 function hoja_(s) { return /^[=+\-@]/.test(s) ? "'" + s : s; }
+
+// ---------- obras de arranque ----------
+// Copia al catálogo una selección de obras de la tienda antigua de Shopify, con sus fotos.
+// Los datos vienen de fichas de 2025: hay que revisar en el panel cuáles siguen disponibles.
+var CDN_ANTIGUA = 'https://cdn.shopify.com/s/files/1/0688/0008/6038/files/';
+var OBRAS_INICIALES = [
+  ['Amanecer Tricolor', 'Justo Osuna', 'Pintura', 'Acrílico sobre lienzo', 140, 80, 2200, ['IMG_8453.jpg', 'IMG_8488.jpg', 'IMG_8489.jpg']],
+  ['Lunas en el Tepuy', 'Justo Osuna', 'Pintura', 'Díptico, acrílico sobre lienzo', 180, 150, 4500, ['D680C053-970D-41AF-8A16-B4EA9A4194C0.jpg', 'DA8E52AE-8886-4EA0-BDB4-56947244B010.jpg', '0A5C3815-0795-43FD-B927-27E86B0E5029.jpg']],
+  ['Atardecer en Lechería', 'Pedro Báez', 'Pintura', 'Acrílico', 140, 90, 3800, ['039C8461-B731-4B82-BA5C-136D830EF698.jpg', '8D356F76-57EE-4C02-931F-ACF36282187E.jpg', '6D1C9195-97B3-408C-AB5F-F4F5FBB56125.jpg']],
+  ['El Paraíso Donde Habita mi María José', 'Néstor Carrera', 'Pintura', '', 155, 60, 1200, ['IMG_8444.jpg', 'IMG_8482.jpg', 'IMG_8483.jpg']],
+  ['Entorno a la Ciudad 1', 'Gregorio Torres', 'Pintura', '', 100, 100, 1000, ['IMG_8433.jpg', 'IMG_8499.jpg', 'IMG_8500.jpg']],
+  ['Simplicity', 'Sabrina Sagnotti de Graci', 'Pintura', '', 100, 40, 900, ['IMG_8448.jpg', 'IMG_8491.jpg', 'IMG_8490.jpg']],
+  ['Turco', 'Bernardo Nieves', 'Pintura', 'Técnica mixta sobre lienzo', 90, 120, 890, ['FullSizeRender.jpg', 'IMG-8308.jpg']],
+  ['Palomina', 'Enrique Lobo', 'Pintura', '', 150, 60, 1000, ['IMG-8562.jpg', 'IMG-8563.jpg', 'IMG-8564.jpg']],
+  ['Marina', 'Enrique Lobo', 'Pintura', 'Acrílico', 150, 60, 1000, ['11AC2167-F020-4CDF-86F6-8AA0C5D19714.jpg', 'C5311E3A-5ED5-4CDC-A25A-2EB8E946E964.jpg', 'F2C1287A-0E0D-45C5-A359-177E5BE87794.jpg']],
+  ['Sin título', 'Hugo Newton', 'Pintura', '', 75, 95, 1200, ['6BE105A4-DF92-400F-B5F1-E00B63D630D6.jpg', 'CA4ED3C0-FEDD-4EDD-981F-3B1C93FE5158.jpg', 'BA19B1C1-84F4-4429-8AF6-916C9FFA64FE.jpg']],
+  ['Virgen de Coromoto', 'María Lea Cerdá', 'Arte sacro', 'Escultura', 12, 20, 115, ['IMG-9638.jpg']],
+  ['Virgen de Rosario de Chiquinquirá', 'María Lea Cerdá', 'Arte sacro', 'Escultura', 12, 30, 115, ['IMG-9642.jpg']]
+];
+
+function importarObrasIniciales() {
+  var ui = SpreadsheetApp.getUi();
+  var r = ui.alert('Traer obras de la tienda antigua', 'Se copiarán ' + OBRAS_INICIALES.length + ' obras con sus fotos y quedarán publicadas en la web. Las que ya estén en la hoja se saltan. ¿Seguir?', ui.ButtonSet.OK_CANCEL);
+  if (r !== ui.Button.OK) return;
+  var hoja = hojaObras_(), carpeta = carpetaFotos_(), ya = {}, hechas = 0, fallos = [];
+  leerObras_().forEach(function (o) { ya[o.titulo + '|' + o.artista] = true; });
+  OBRAS_INICIALES.forEach(function (o, n) {
+    if (ya[o[0] + '|' + o[1]]) return;
+    try {
+      var base = (o[0] + '-' + o[1]).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+      var ids = o[7].map(function (archivo, i) {
+        var resp = UrlFetchApp.fetch(CDN_ANTIGUA + archivo + '?width=1600&format=jpg', { muteHttpExceptions: true });
+        if (resp.getResponseCode() !== 200) throw new Error('foto ' + archivo + ' código ' + resp.getResponseCode());
+        var blob = resp.getBlob().setName(base + '-' + (i + 1) + '.jpg');
+        return Drive.Files.create({ name: base + '-' + (i + 1) + '.jpg', parents: [carpeta] }, blob, { fields: 'id' }).id;
+      });
+      hoja.appendRow(['o' + (Date.now() + n).toString(36), new Date(), 'Publicada', o[0], o[1], o[2], o[3], o[4], o[5], '', o[6], ids.join(','), new Date(), 0]);
+      hechas++;
+    } catch (err) { fallos.push(o[0] + ': ' + err.message); }
+  });
+  CacheService.getScriptCache().remove('catalogo');
+  ui.alert('Obras copiadas: ' + hechas + '.' + (fallos.length ? '\n\nNo se pudieron copiar:\n' + fallos.join('\n') : ''));
+}
 
 // ---------- Shopify: conexión ----------
 function conectarShopify() {

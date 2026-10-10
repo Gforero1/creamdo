@@ -7,6 +7,16 @@ Web pública de la galería (raíz del sitio) y panel privado para cargar obras 
 `index.html` y `tienda.js` leen el catálogo del backend (`?catalogo=1`) y lo pintan: obras, ficha de obra, artistas.
 No hay carrito: cada obra abre WhatsApp con su nombre escrito. Solo salen obras en estado Publicada o Vendida.
 
+### Dirección de diseño
+
+Sale del logo de la marca, no de una plantilla:
+
+- **Color:** blanco y negro, con las tres rayas del logo como acento: cian `#009ED8`, naranja `#F26122`, magenta `#EC1163`.
+- **Tipografía:** una sola familia, Archivo (alojada en `marca/`), usada como en el logotipo: muy gruesa y ancha contra muy fina.
+- **Motivo:** rayas inclinadas 22 grados, igual que el monograma.
+- **Retícula:** obras en dos columnas desfasadas; sin tarjetas, sombras ni esquinas redondeadas.
+- **Textos:** los de la galería (bio de Instagram y tienda anterior) y datos reales de cada obra.
+
 ## Panel: obra en sala
 
 Panel privado de Creamdo Art. Se sube la foto de una pintura, se marcan sus esquinas y sus medidas,
