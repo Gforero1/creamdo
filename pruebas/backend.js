@@ -54,6 +54,19 @@ t('pid sin sesión no devuelve lo recordado',post({accion:'integrar',tipo:'masca
 t('pid mal formado se ignora',post({accion:'integrar',token:e.token,tipo:'mascara',imagen:img,pid:'../x'}).ok&&llamadas.length===antes+2);}
 respuesta={code:429,body:{error:{message:'quota CLAVE-FALSA-DE-PRUEBA'}}};const f=post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img});
 t('error de Gemini sin filtrar detalle',f.ok===false&&!JSON.stringify(f).includes('quota'));
+{const correos=[];ctx.MailApp={sendEmail:(a,b,c)=>correos.push([a,b,c])};
+t('sin saldo: motivo y sin correo si no hay destinatario',f.motivo==='saldo'&&f.avisado===false);
+props.CORREO_AVISOS='aviso@ejemplo.test';
+const g=post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img}),g2=post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img});
+t('sin saldo: un solo correo aunque falle dos veces',g.avisado&&g2.avisado&&correos.length===1&&correos[0][0]==='aviso@ejemplo.test'&&/saldo/.test(correos[0][1])&&!correos[0][2].includes('CLAVE-FALSA'));
+respuesta={code:429,body:{error:{message:'Rate limit: requests per minute exceeded'}}};const o=post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img});
+t('límite por minuto: no es falta de saldo',!o.motivo&&/ocupada/.test(o.error)&&correos.length===1);
+respuesta={code:400,body:{error:{message:'API key not valid. Please pass a valid API key.'}}};const k=post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img});
+t('clave rechazada: correo distinto',k.motivo==='clave'&&correos.length===2&&/clave/.test(correos[1][1]));
+respuesta={code:500,body:{error:{message:'internal'}}};const q=post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img});
+t('otro error: sin aviso',!q.motivo&&correos.length===2);
+ctx.MailApp={sendEmail:()=>{throw new Error('sin permiso')}};delete props.AVISO_saldo;respuesta={code:429,body:{error:{message:'quota'}}};
+t('si el correo falla el panel responde igual',post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img}).avisado===false);}
 props['USO_2026-10-10']='60';t('tope diario',post({accion:'integrar',token:e.token,tipo:'pintura',imagen:img}).error.includes('tope'));
 for(let i=0;i<8;i++)post({accion:'entrar',clave:'no'});t('bloqueo tras 8 fallos',post({accion:'entrar',clave:'clave-de-prueba'}).error.includes('Demasiados'));
 console.log(ok+' pruebas bien, '+mal+' mal');

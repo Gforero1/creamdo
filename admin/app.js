@@ -22,6 +22,16 @@
   function aviso(donde, texto, clase) {
     var d = document.createElement('div'); d.className = 'aviso ' + (clase || ''); d.textContent = texto; $(donde).appendChild(d);
   }
+  // Cuando Gemini se queda sin saldo o rechaza la clave no sirve reintentar: se le dice a quién avisar.
+  function falloImagen(r) {
+    var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion';
+    if (r.motivo === 'saldo' || r.motivo === 'clave') {
+      e.sinSaldo = true;
+      e.message = r.error + (r.avisado ? ' Ya se le avisó a Memo por correo; escríbele también para que lo arregle.' : ' Avísale a Memo para que lo arregle.') +
+        ' No es un fallo tuyo ni de la foto. Mientras tanto puedes guardar la obra con las fotos tal cual.';
+    }
+    return e;
+  }
   function limpiar(donde) { $(donde).textContent = ''; }
   function guardarToken(t) { E.token = t; try { t ? sessionStorage.setItem('creamdo', t) : sessionStorage.removeItem('creamdo'); } catch (e) {} }
   function tokenVigente(t) { return !!t && Number(String(t).split('.')[0]) > Date.now() + 60000; }
@@ -292,7 +302,7 @@
     llamar({ accion: 'integrar', token: E.token, tipo: 'pintura', imagen: b64, sala: E.sala.id,
              titulo: $('titulo').value, artista: $('artista').value, anchoCm: E.medidas[0], altoCm: E.medidas[1] })
       .then(function (r) {
-        if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
+        if (!r.ok) throw falloImagen(r);
         return recogerImagen(r);
       })
       .then(function (img) {
@@ -311,7 +321,7 @@
       })
       .catch(function (e) {
         if (e.sesion) { guardarToken(null); ir('entrar'); return; }
-        aviso('sala-avisos', (e.message === 'Failed to fetch' ? 'No hay conexión con el servidor.' : e.message) + ' Puedes intentarlo otra vez o usar el montaje sin IA.', 'grave');
+        aviso('sala-avisos', e.sinSaldo ? e.message : (e.message === 'Failed to fetch' ? 'No hay conexión con el servidor.' : e.message) + ' Puedes intentarlo otra vez o usar el montaje sin IA.', 'grave');
       })
       .then(function () { progreso(-1, '', 'esp'); $('sala-acciones').classList.remove('oculto'); });
   }
@@ -487,7 +497,7 @@
   function pedirImagen(datos) {
     datos.accion = 'integrar'; datos.token = E.token; datos.titulo = $('obj-titulo').value; datos.artista = $('obj-artista').value;
     return llamar(datos).then(function (r) {
-      if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
+      if (!r.ok) throw falloImagen(r);
       return recogerImagen(r);
     }).then(function (img) { var c = I.lienzo(img.naturalWidth, img.naturalHeight); c.getContext('2d').drawImage(img, 0, 0); return c; });
   }
@@ -537,7 +547,7 @@
     pedirImagen({ tipo: 'mascara', imagen: b64 }).then(function (mascara) {
       progreso(2, 'La pieza ya está separada. Ahora se dibuja el mueble y la pared.');
       return pedirImagen({ tipo: 'entorno', imagen: b64, mueble: $('obj-mueble').value, altoCm: alto })
-        .catch(function (e) { if (e.sesion) throw e; return null; })
+        .catch(function (e) { if (e.sesion || e.sinSaldo) throw e; return null; })
         .then(function (sala) { return [mascara, sala]; });
     }).then(function (r) {
       progreso(3, '');
@@ -557,7 +567,7 @@
       }
     }).catch(function (e) {
       if (e.sesion) { guardarToken(null); ir('entrar'); return; }
-      aviso('amb-avisos', (e.message === 'Failed to fetch' ? 'No hay conexión con el servidor.' : e.message) + ' Puedes intentarlo otra vez o guardar la pieza con las fotos tal cual.', 'grave');
+      aviso('amb-avisos', e.sinSaldo ? e.message : (e.message === 'Failed to fetch' ? 'No hay conexión con el servidor.' : e.message) + ' Puedes intentarlo otra vez o guardar la pieza con las fotos tal cual.', 'grave');
     }).then(function () { boton.disabled = false; progreso(-1); });
   });
 

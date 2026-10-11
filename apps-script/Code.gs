@@ -62,6 +62,7 @@ function onOpen() {
     .addItem('2. Guardar la clave de Gemini', 'guardarClaveGemini')
     .addItem('3. Crear o cambiar la contraseña del panel', 'crearContrasena')
     .addItem('4. Conectar con Shopify', 'conectarShopify')
+    .addItem('5. Correo para los avisos', 'guardarCorreoAvisos')
     .addSeparator()
     .addItem('Ver estado', 'verEstado')
     .addItem('Probar la conexión con Shopify', 'probarShopify')
@@ -100,6 +101,47 @@ function guardarClaveGemini() {
   ui.alert('Clave guardada.');
 }
 
+// Correo al que se avisa cuando Gemini se queda sin saldo o rechaza la clave.
+// Se guarda en las propiedades del script, no en el código: el repositorio es público.
+function guardarCorreoAvisos() {
+  var ui = SpreadsheetApp.getUi(), p = PropertiesService.getScriptProperties();
+  var r = ui.prompt('Correo para los avisos', 'A este correo se avisa si se acaba el saldo de las imágenes. Ahora: ' + (p.getProperty('CORREO_AVISOS') || 'ninguno'), ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK) return;
+  var correo = r.getResponseText().trim();
+  if (!/^[^\s@<>,;]+@[^\s@<>,;]+\.[a-z]{2,}$/i.test(correo) || correo.length > 120) { ui.alert('Eso no parece un correo. No se guardó nada.'); return; }
+  p.setProperty('CORREO_AVISOS', correo);
+  p.deleteProperty('AVISO_saldo'); p.deleteProperty('AVISO_clave');
+  MailApp.sendEmail(correo, 'Creamdo: avisos activados', 'A partir de ahora recibirás aquí un correo si el admin de Creamdo se queda sin saldo de Gemini o si la clave deja de funcionar.');
+  ui.alert('Guardado. Te acabo de enviar un correo de prueba.');
+}
+
+// Distingue por qué falló Gemini. Devuelve 'saldo', 'clave', 'ocupada' o ''.
+function motivoFallo_(codigo, texto) {
+  var t = String(texto || '').toLowerCase();
+  if (/billing|credit|prepa|balance|payment|spend/.test(t)) return 'saldo';
+  if (codigo === 429) return /per[ _-]?minute|perminute|rate limit/.test(t) ? 'ocupada' : 'saldo';
+  if (/api[ _]?key|api_key|unauthenticated|expired|leaked/.test(t) && (codigo === 400 || codigo === 401 || codigo === 403)) return 'clave';
+  return '';
+}
+
+// Un correo como mucho cada 12 horas por motivo. Si falla el envío, el panel sigue igual.
+function avisarDueno_(motivo, codigo) {
+  try {
+    var p = PropertiesService.getScriptProperties(), correo = p.getProperty('CORREO_AVISOS');
+    if (!correo) return false;
+    var llave = 'AVISO_' + motivo, ahora = Date.now();
+    if (ahora - Number(p.getProperty(llave) || 0) < 12 * 3600 * 1000) return true;
+    p.setProperty(llave, String(ahora));
+    var asunto = motivo === 'saldo' ? 'Creamdo: se acabó el saldo de Gemini' : 'Creamdo: la clave de Gemini no funciona';
+    var cuerpo = (motivo === 'saldo'
+      ? 'El admin de Creamdo intentó crear una imagen y Gemini la rechazó por falta de saldo o de cuota (código ' + codigo + ').\n\nHay que recargar o revisar la facturación del proyecto en Google AI Studio.'
+      : 'El admin de Creamdo intentó crear una imagen y Gemini rechazó la clave (código ' + codigo + ').\n\nHay que crear una clave nueva y guardarla desde el menú Creamdo de la hoja.') +
+      '\n\nMientras tanto se pueden seguir subiendo y publicando obras; solo fallan las imágenes en sala.\nEl detalle está en el registro de ejecuciones de Apps Script. No recibirás otro aviso igual en 12 horas.';
+    MailApp.sendEmail(correo, asunto, cuerpo);
+    return true;
+  } catch (err) { console.warn('No se pudo enviar el aviso: ' + err.message); return false; }
+}
+
 function crearContrasena() {
   var ui = SpreadsheetApp.getUi();
   var r = ui.prompt('Contraseña del panel', 'Mínimo 10 caracteres. Es la que se escribe al entrar al panel.', ui.ButtonSet.OK_CANCEL);
@@ -122,6 +164,7 @@ function verEstado() {
     'Clave de Gemini: ' + (p.getProperty('GEMINI_API_KEY') ? 'guardada' : 'FALTA') + '\n' +
     'Contraseña del panel: ' + (p.getProperty('PANEL_HUELLA') ? 'creada' : 'FALTA') + '\n' +
     'Shopify: ' + (p.getProperty('SHOPIFY_CLIENT_SECRET') ? 'conectado a ' + p.getProperty('SHOPIFY_TIENDA') : 'sin conectar') + '\n' +
+    'Correo para los avisos: ' + (p.getProperty('CORREO_AVISOS') || 'FALTA') + '\n' +
     'Imágenes generadas hoy: ' + hoy + ' de ' + LIMITE_DIARIO);
 }
 
@@ -559,6 +602,12 @@ function integrar_(d) {
   if (!ok) {
     // no se devuelve el detalle de Google a la web; queda en el registro de ejecuciones
     console.error('Gemini ' + codigo + ' ' + String(resp.getContentText()).slice(0, 500));
+    var motivo = motivoFallo_(codigo, resp.getContentText());
+    if (motivo === 'ocupada') return { ok: false, error: 'La IA está ocupada en este momento. Espera un minuto.' };
+    if (motivo) {
+      var avisado = avisarDueno_(motivo, codigo);
+      return { ok: false, motivo: motivo, avisado: avisado, error: motivo === 'saldo' ? 'Se acabó el saldo para crear imágenes.' : 'La clave de las imágenes dejó de funcionar.' };
+    }
     return { ok: false, error: 'La IA no devolvió una imagen (código ' + codigo + ')' };
   }
   // La imagen no viaja en la respuesta: pesa varios megas y Google pierde a menudo las respuestas grandes.
