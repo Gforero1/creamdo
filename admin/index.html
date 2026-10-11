@@ -126,6 +126,15 @@ button.enlace{background:none;border:0;color:var(--tinta);text-decoration:underl
 @keyframes corre{0%{transform:scaleX(0)}50%{transform:scaleX(1);transform-origin:left}51%{transform-origin:right}100%{transform:scaleX(0);transform-origin:right}}
 @keyframes late{50%{opacity:.35}}
 @media(prefers-reduced-motion:reduce){.barra-espera i,.progreso li.ahora::before{animation:none}}
+.girar{margin-top:-4px}
+.girar::before,.fotos-ed .gira::before,.tiras .gira::before{content:"↻ "}
+.guardar button{margin-bottom:6px}
+.guardar .nota{margin:0 0 18px;font-size:13.5px}
+.tiras figure{margin:0;background:var(--papel2)}
+.tiras figure button{width:100%;margin:0;padding:8px 2px;font-size:12.5px;font-weight:600;background:#fff;color:var(--tinta);border:1px solid var(--linea);border-top:0}
+.fotos-ed .acc{flex-wrap:wrap}
+.fotos-ed .acc button{flex:1 1 45%}
+.aviso a{display:inline-block;margin-top:6px}
 .oculto{display:none!important}
 input[type=file]{position:absolute;width:1px;height:1px;opacity:0}
 footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padding-top:12px;margin-top:34px}
@@ -227,9 +236,14 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     <div id="amb-espera" class="progreso oculto" role="status" aria-live="polite"><div class="barra-espera" aria-hidden="true"><i></i><i></i><i></i></div><ol id="amb-pasos"></ol><p id="amb-nota-paso"></p></div>
     <button id="b-ambientar" class="otro">Crear la imagen en sala</button>
     <button id="b-amb-quitar" class="enlace oculto">No usar esta imagen</button>
-    <label class="casilla"><input type="checkbox" id="obj-publicar"> Publicarla ya en la web</label>
+    <h2>Guardar <em>la pieza</em></h2>
     <div id="obj-avisos"></div>
-    <button id="b-obj-guardar" class="acento">Guardar en el catálogo</button>
+    <div class="guardar">
+      <button id="b-obj-publicar" class="acento" type="button">Guardar y publicar en la web</button>
+      <p class="nota">Los clientes la verán en la web en un par de minutos.</p>
+      <button id="b-obj-guardar" class="otro" type="button">Guardar sin publicar</button>
+      <p class="nota">Queda como borrador: solo la ves tú, en "Mis obras", y la publicas cuando quieras.</p>
+    </div>
     <button id="b-obj-atras" class="enlace">Volver</button>
   </section>
 
@@ -279,6 +293,7 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
     <p class="nota">Arrastra cada punto hasta una esquina de la obra, por dentro del marco si lo tiene.</p>
     <div id="esq-avisos"></div>
     <div class="lienzo"><canvas id="c-esquinas"></canvas></div>
+    <button id="b-girar" class="otro girar" type="button">Girar la foto</button>
     <button id="b-esq-sig" class="acento">Continuar</button>
     <button id="b-recortada" class="otro">La foto ya es solo la obra</button>
     <button id="b-otra-foto" class="enlace">Cambiar de foto</button>
@@ -339,19 +354,22 @@ footer{font-size:12.5px;color:var(--gris);border-top:1px solid var(--linea);padd
         <div><label for="cat-precio">Precio en $ (opcional)</label><input type="number" id="cat-precio" inputmode="decimal" min="0" step="1"></div>
       </div>
       <label for="cat-tecnica">Técnica (opcional)</label><input type="text" id="cat-tecnica" maxlength="80" placeholder="Acrílico sobre lienzo">
-      <label class="casilla"><input type="checkbox" id="cat-publicar"> Publicarla ya en la web</label>
       <div id="cat-avisos"></div>
-      <button id="b-catalogo">Guardar en el catálogo</button>
-      <p class="nota">Sin marcar la casilla queda como borrador y se publica después desde "Obras".</p>
+      <div class="guardar">
+        <button id="b-cat-publicar" class="acento" type="button">Guardar y publicar en la web</button>
+        <p class="nota">Los clientes la verán en la web en un par de minutos.</p>
+        <button id="b-catalogo" class="otro" type="button">Guardar sin publicar</button>
+        <p class="nota">Queda como borrador: solo la ves tú, en "Mis obras", y la publicas cuando quieras.</p>
+      </div>
     </div>
   </section>
 
   <input type="file" id="archivos-obj" accept="image/*" multiple>
   <footer>Uso interno de Creamdo Art. <button class="enlace oculto" id="b-salir" style="padding:0;font-size:12.5px">Cerrar sesión</button></footer>
 </main>
-<script src="../config.js?v=14"></script>
-<script src="salas.js?v=14"></script>
-<script src="imagen.js?v=14"></script>
-<script src="app.js?v=14"></script>
+<script src="../config.js?v=15"></script>
+<script src="salas.js?v=15"></script>
+<script src="imagen.js?v=15"></script>
+<script src="app.js?v=15"></script>
 </body>
 </html>

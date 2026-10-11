@@ -29,6 +29,11 @@ Pensado para alguien que no es de ordenadores:
 - Antes de pedir fotos se enseñan tres consejos, distintos para cuadros y para esculturas.
 - En "Mis obras" cada obra lleva un sello con su estado, los campos tienen nombre y una leyenda explica qué se ve en la web con cada estado.
 
+## Admin: girar fotos y guardar
+
+- **Girar:** un cuarto de vuelta por toque. En el paso de esquinas de un cuadro, en las miniaturas al subir una escultura y en cada foto de la pantalla de edición. Una foto ya guardada se baja, se gira y se sube como nueva; la anterior va a la papelera de Drive.
+- **Guardar:** en vez de una casilla hay dos botones con su explicación: "Guardar y publicar en la web" y "Guardar sin publicar" (borrador). El aviso de después enlaza a la web o a "Mis obras".
+
 ## Idiomas
 
 La web está en español e inglés. Carga en el idioma del dispositivo (español si el dispositivo está en español, inglés en cualquier otro caso) y recuerda lo que la persona elija con el selector ES / EN.

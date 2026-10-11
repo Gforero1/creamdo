@@ -355,6 +355,13 @@
     return sal;
   }
 
+  // Un cuarto de vuelta a la derecha: para la foto vertical de un cuadro horizontal (o al revés).
+  function girar(c) {
+    var g = lienzo(c.height, c.width), x = ctx2d(g);
+    x.translate(g.width, 0); x.rotate(Math.PI / 2); x.drawImage(c, 0, 0);
+    return g;
+  }
+
   // ---------- esculturas y objetos ----------
   // La IA devuelve la foto con el fondo en verde. De ahí sale la silueta; los píxeles de la pieza
   // se toman siempre de la foto original, nunca de lo que devuelve la IA.
@@ -470,6 +477,6 @@
     lienzo: lienzo, escalar: escalar, nitidez: nitidez, quemado: quemado, enderezar: enderezar, tocaBorde: tocaBorde,
     gananciaPared: gananciaPared, corregir: corregir, cuadroEnSala: cuadroEnSala, multiplicar: multiplicar,
     montar: montar, localizar: localizar, repegar: repegar,
-    silueta: silueta, verificarEntorno: verificarEntorno, pegarPieza: pegarPieza, estudio: estudio
+    girar: girar, silueta: silueta, verificarEntorno: verificarEntorno, pegarPieza: pegarPieza, estudio: estudio
   };
 })();

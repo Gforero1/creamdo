@@ -20,6 +20,9 @@ await p.fill('#clave','prueba123');await p.click('#b-entrar');await p.waitForSel
 await p.screenshot({path:'cap-2-foto.png'});
 await p.setInputFiles('#archivo','marina.jpg');await p.waitForSelector('#p-esquinas.visible');await p.waitForTimeout(300);
 console.log('   nitidez foto limpia',Math.round(await p.evaluate(()=>__panel.E.nitidez)));
+{const antes=await p.evaluate(()=>[__panel.E.foto.width,__panel.E.foto.height]);await p.click('#b-girar');const des=await p.evaluate(()=>[__panel.E.foto.width,__panel.E.foto.height]);
+ t('girar la foto: cambia de horizontal a vertical',des[0]===antes[1]&&des[1]===antes[0]);await p.click('#b-girar');await p.click('#b-girar');await p.click('#b-girar');
+ t('cuatro giros: vuelve a como estaba',JSON.stringify(await p.evaluate(()=>[__panel.E.foto.width,__panel.E.foto.height]))===JSON.stringify(antes));}
 await p.screenshot({path:'cap-3-esquinas.png'});
 await p.click('#b-recortada');await p.waitForSelector('#p-medidas.visible');
 await p.fill('#ancho','60');await p.fill('#alto','150');await p.waitForTimeout(500);
@@ -44,7 +47,8 @@ t('título y artista ya rellenos',await p.inputValue('#cat-titulo')==='Marina'&&
 await p.fill('#cat-precio','1000');await p.fill('#cat-tecnica','Acrílico sobre lienzo');await p.click('#b-catalogo');
 await p.waitForSelector('#cat-avisos .bien');
 t('guarda como borrador y lo dice',(await textoAvisos(p,'cat-avisos')).includes('borrador'));
-t('no deja guardar dos veces',await p.evaluate(()=>document.getElementById('b-catalogo').disabled));
+t('no deja guardar dos veces, ni publicar encima',await p.evaluate(()=>document.getElementById('b-catalogo').disabled&&document.getElementById('b-cat-publicar').disabled));
+t('borrador: explica cómo publicarla y enlaza a Mis obras',(await textoAvisos(p,'cat-avisos')).includes('Mis obras')&&await p.locator('#cat-avisos a').count()===1);
 await p.screenshot({path:'cap-10-catalogo.png',fullPage:true});
 // otra sala donde la IA devuelve una escena que no corresponde: debe descartarla
 t('sala pequeña desactivada para obra de 150 cm',await p.evaluate(()=>document.querySelector('[data-sala=colonial]').disabled));
@@ -64,8 +68,8 @@ t('escultura: enseña las dos fotos',await p.evaluate(()=>document.querySelector
 await p.click('#b-obj-guardar');t('escultura: pide título y artista',(await textoAvisos(p,'obj-avisos')).includes('título'));
 await p.fill('#obj-titulo','Virgen de Coromoto');await p.fill('#obj-artista','María Lea Cerdá');await p.click('#b-obj-guardar');
 t('escultura: pide el alto',(await textoAvisos(p,'obj-avisos')).includes('alto'));
-await p.fill('#obj-alto','20');await p.fill('#obj-ancho','12');await p.fill('#obj-precio','115');await p.check('#obj-publicar');await p.click('#b-obj-guardar');await p.waitForSelector('#obj-avisos .bien');
-t('escultura: guardada y publicada',(await textoAvisos(p,'obj-avisos')).includes('publicada'));
+await p.fill('#obj-alto','20');await p.fill('#obj-ancho','12');await p.fill('#obj-precio','115');await p.click('#b-obj-publicar');await p.waitForSelector('#obj-avisos .bien');
+t('escultura: guardada y publicada, con enlace a la web',(await textoAvisos(p,'obj-avisos')).includes('publicada')&&(await p.getAttribute('#obj-avisos a','href'))==='../');
 await p.screenshot({path:'cap-11-objeto.png',fullPage:true});
 // lista de obras
 await p.click('#b-ver-obras');await p.waitForSelector('#obras-lista .obra');

@@ -161,6 +161,12 @@
     E.esquinas = [[0, 0], [w, 0], [w, h], [0, h]]; E.recortada = true; pintarEsquinas(); pasarAMedidas();
   });
   $('b-esq-sig').addEventListener('click', pasarAMedidas);
+  $('b-girar').addEventListener('click', function () {
+    E.foto = I.girar(E.foto); E.recortada = false;
+    var w = E.foto.width, h = E.foto.height, m = 0.14;
+    E.esquinas = [[w * m, h * m], [w * (1 - m), h * m], [w * (1 - m), h * (1 - m)], [w * m, h * (1 - m)]];
+    pintarEsquinas();
+  });
   $('b-otra-foto').addEventListener('click', function () { ir('foto'); });
   function pasarAMedidas() {
     var q = ordenar(E.esquinas); limpiar('esq-avisos');
@@ -364,33 +370,44 @@
     $('cat-cuenta').textContent = 'Se guardarán la foto de la obra y ' + (n === 1 ? 'esta imagen en sala.' : 'las ' + n + ' imágenes en sala que has generado.');
     limpiar('cat-avisos'); botonGuardar($('b-catalogo'), E.enviada);
   }
-  function botonGuardar(b, hecho) { b.disabled = hecho; b.textContent = hecho ? 'Ya está en el catálogo' : 'Guardar en el catálogo'; }
+  // Dos botones por pantalla: publicar ya o dejar en borrador. Al guardar, los dos quedan apagados.
+  var PAREJAS = { 'b-catalogo': 'b-cat-publicar', 'b-cat-publicar': 'b-catalogo', 'b-obj-guardar': 'b-obj-publicar', 'b-obj-publicar': 'b-obj-guardar' };
+  function textoBoton(b) { return /publicar$/.test(b.id) ? 'Guardar y publicar en la web' : 'Guardar sin publicar'; }
+  function botonGuardar(b, hecho) {
+    [b, $(PAREJAS[b.id])].forEach(function (x) { if (!x) return; x.disabled = hecho; x.textContent = hecho ? 'Ya está guardada' : textoBoton(x); });
+  }
   function enviarObra(datos, avisos, boton, alTerminar) {
     limpiar(avisos);
     if (!datos.titulo || !datos.artista) { aviso(avisos, 'Escribe el título y el artista.', 'grave'); return; }
     if (!datos.altoCm) { aviso(avisos, 'Escribe al menos el alto en centímetros.', 'grave'); return; }
     if (!tokenVigente(E.token)) { guardarToken(null); ir('entrar'); return; }
-    boton.disabled = true; boton.textContent = 'Guardando…';
+    boton.disabled = true; boton.textContent = 'Guardando…'; if ($(PAREJAS[boton.id])) $(PAREJAS[boton.id]).disabled = true;
     datos.accion = 'guardarObra'; datos.token = E.token;
     var hecho = false;
     llamar(datos).then(function (r) {
       if (!r.ok) { var e = new Error(r.error || 'error'); e.sesion = r.error === 'sesion'; throw e; }
       hecho = true;
-      aviso(avisos, '"' + r.titulo + '" quedó guardada ' + (r.estado === 'Publicada' ? 'y publicada en la web.' : 'como borrador. Publícala desde "Obras" cuando quieras.'), 'bien');
+      aviso(avisos, '"' + r.titulo + '" quedó guardada ' + (r.estado === 'Publicada' ? 'y publicada. En un par de minutos se ve en la web.' : 'como borrador: todavía no se ve en la web. Para publicarla, entra en "Mis obras" y cambia su estado a Publicada.'), 'bien');
+      var caja = $(avisos).lastChild, salto = document.createElement('br'), enlace = document.createElement('a');
+      if (r.estado === 'Publicada') { enlace.href = '../'; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Ver la web'; }
+      else { enlace.href = '#'; enlace.textContent = 'Ir a Mis obras'; enlace.addEventListener('click', function (ev) { ev.preventDefault(); cargarObras(); }); }
+      caja.appendChild(salto); caja.appendChild(enlace);
       if (alTerminar) alTerminar();
     }).catch(function (e) {
       if (e.sesion) { guardarToken(null); ir('entrar'); return; }
       aviso(avisos, e.message === 'Failed to fetch' ? 'No hay conexión con el servidor. Inténtalo de nuevo.' : e.message, 'grave');
     }).then(function () { botonGuardar(boton, hecho); });
   }
-  $('b-catalogo').addEventListener('click', function () {
+  function guardarCuadro(boton, estado) {
     var titulo = $('cat-titulo').value.trim(), artista = $('cat-artista').value.trim();
     var imagenes = [{ datos: jpeg(E.obra, 1800) }];
     E.escenas.forEach(function (x) { imagenes.push({ datos: jpeg(x.lienzo, 2200) }); });
     enviarObra({ titulo: titulo, artista: artista, tipoObra: $('cat-tipo').value, tecnica: $('cat-tecnica').value, precio: parseFloat($('cat-precio').value) || 0,
-                 anchoCm: E.medidas[0], altoCm: E.medidas[1], estado: $('cat-publicar').checked ? 'Publicada' : 'Borrador', imagenes: imagenes, enSala: E.escenas.length },
-               'cat-avisos', $('b-catalogo'), function () { E.enviada = true; });
-  });
+                 anchoCm: E.medidas[0], altoCm: E.medidas[1], estado: estado, imagenes: imagenes, enSala: E.escenas.length },
+               'cat-avisos', boton, function () { E.enviada = true; });
+  }
+  $('b-catalogo').addEventListener('click', function () { guardarCuadro(this, 'Borrador'); });
+  $('b-cat-publicar').addEventListener('click', function () { guardarCuadro(this, 'Publicada'); });
 
   // ---------- esculturas y objetos ----------
   var objFotos = [], amb = null;   // amb: { lienzo, enSala } la imagen ambientada o de estudio
@@ -410,23 +427,38 @@
         URL.revokeObjectURL(url); return c;
       });
     })).then(function (ls) {
-      objFotos = ls; var cont = $('obj-fotos'); cont.textContent = '';
-      ls.forEach(function (c) { var im = document.createElement('img'); im.src = c.toDataURL('image/jpeg', 0.6); im.alt = ''; cont.appendChild(im); });
+      objFotos = ls; pintarFotosObjeto();
       limpiar('obj-avisos'); botonGuardar($('b-obj-guardar'), false); quitarAmbiente();
       if (ls.some(function (c) { return I.nitidez(c) < NITIDEZ_MINIMA; })) aviso('obj-avisos', 'Alguna foto parece movida o desenfocada.');
       ir('objeto');
     }).catch(function () { err.textContent = 'No se pudo abrir alguna de las fotos.'; err.classList.remove('oculto'); });
   });
   $('b-obj-atras').addEventListener('click', function () { ir('pieza'); });
-  $('b-obj-guardar').addEventListener('click', function () {
+  function pintarFotosObjeto() {
+    var cont = $('obj-fotos'); cont.textContent = '';
+    objFotos.forEach(function (c, i) {
+      var fig = document.createElement('figure'), im = document.createElement('img'), g = document.createElement('button');
+      im.src = c.toDataURL('image/jpeg', 0.6); im.alt = '';
+      g.type = 'button'; g.className = 'gira'; g.textContent = 'Girar'; g.setAttribute('aria-label', 'Girar la foto ' + (i + 1));
+      g.addEventListener('click', function () {
+        objFotos[i] = I.girar(objFotos[i]);
+        if (i === 0) quitarAmbiente();   // la imagen en sala se hizo con la foto sin girar
+        botonGuardar($('b-obj-guardar'), false); pintarFotosObjeto();
+      });
+      fig.appendChild(im); fig.appendChild(g); cont.appendChild(fig);
+    });
+  }
+  function guardarObjeto(boton, estado) {
     enviarObra({ titulo: $('obj-titulo').value.trim(), artista: $('obj-artista').value.trim(), tipoObra: $('obj-tipo').value, tecnica: $('obj-tecnica').value,
                  precio: parseFloat($('obj-precio').value) || 0, altoCm: parseFloat($('obj-alto').value) || 0, anchoCm: parseFloat($('obj-ancho').value) || 0,
-                 fondoCm: parseFloat($('obj-fondo').value) || 0, estado: $('obj-publicar').checked ? 'Publicada' : 'Borrador',
+                 fondoCm: parseFloat($('obj-fondo').value) || 0, estado: estado,
                  imagenes: imagenesObjeto(), enSala: amb && amb.enSala ? 1 : 0 },
-               'obj-avisos', $('b-obj-guardar'), function () {
+               'obj-avisos', boton, function () {
                  ['obj-titulo', 'obj-precio', 'obj-tecnica', 'obj-alto', 'obj-ancho', 'obj-fondo'].forEach(function (id) { $(id).value = ''; });
                });
-  });
+  }
+  $('b-obj-guardar').addEventListener('click', function () { guardarObjeto(this, 'Borrador'); });
+  $('b-obj-publicar').addEventListener('click', function () { guardarObjeto(this, 'Publicada'); });
   // Orden en la web: si hay sala, fotos reales primero y la sala al final (lleva el rótulo de imagen referencial).
   // Si solo se pudo limpiar el fondo, esa va primero: es la pieza real y hace mejor portada.
   function imagenesObjeto() {
@@ -589,13 +621,23 @@
     ed.fotos.forEach(function (f, i) {
       var fig = document.createElement('figure'), im = document.createElement('img'), cap = document.createElement('figcaption'), acc = document.createElement('div');
       im.alt = ''; im.src = f.id ? foto(f.id, 300) : f.lienzo.toDataURL('image/jpeg', 0.6);
-      cap.textContent = f.sala ? 'En sala' : (i === 0 ? 'Portada' : (f.id ? '' : 'Nueva'));
+      cap.textContent = f.sala ? 'En sala' : (i === 0 ? 'Portada' : (f.id ? '' : 'Nueva o girada'));
       acc.className = 'acc';
       var sube = document.createElement('button'); sube.type = 'button'; sube.textContent = 'Portada'; sube.disabled = i === 0 || f.sala; sube.setAttribute('aria-label', 'Poner como portada la foto ' + (i + 1));
       sube.addEventListener('click', function () { ed.fotos.splice(i, 1); ed.fotos.unshift(f); pintarFotosEdicion(); });
       var quita = document.createElement('button'); quita.type = 'button'; quita.textContent = 'Quitar'; quita.disabled = ed.fotos.length === 1; quita.setAttribute('aria-label', 'Quitar la foto ' + (i + 1));
       quita.addEventListener('click', function () { ed.fotos.splice(i, 1); pintarFotosEdicion(); });
-      acc.appendChild(sube); acc.appendChild(quita); fig.appendChild(im); fig.appendChild(cap); fig.appendChild(acc); cont.appendChild(fig);
+      var gira = document.createElement('button'); gira.type = 'button'; gira.className = 'gira'; gira.textContent = 'Girar'; gira.setAttribute('aria-label', 'Girar la foto ' + (i + 1));
+      gira.addEventListener('click', function () {
+        limpiar('ed-avisos'); gira.disabled = true; gira.textContent = 'Girando…';
+        var listo = f.lienzo ? Promise.resolve(f.lienzo) : recogerImagen({ archivo: f.id }).then(function (img) {
+          var k = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+          var c = I.lienzo(img.naturalWidth * k, img.naturalHeight * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); return c;
+        });
+        listo.then(function (c) { ed.fotos[i] = { lienzo: I.girar(c), sala: f.sala }; pintarFotosEdicion(); })
+          .catch(function () { gira.disabled = false; gira.textContent = 'Girar'; aviso('ed-avisos', 'No se pudo girar esa foto. Comprueba la conexión e inténtalo otra vez.', 'grave'); });
+      });
+      acc.appendChild(sube); acc.appendChild(gira); acc.appendChild(quita); fig.appendChild(im); fig.appendChild(cap); fig.appendChild(acc); cont.appendChild(fig);
     });
   }
   $('ed-archivos').addEventListener('change', function () {
